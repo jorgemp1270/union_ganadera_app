@@ -2,9 +2,26 @@
 
 Aplicación móvil desarrollada en Flutter para la gestión integral de ganado, predios y eventos ganaderos de la Unión Ganadera.
 
+## 🔗 Repositorios
+
+Este proyecto es parte de un ecosistema más grande. Revisa los otros repositorios de sus componentes:
+
+- **Backend API**: [union_ganadera_api](https://github.com/jorgemp1270/union_ganadera_api)
+
 ## 📋 Descripción
 
 Esta aplicación permite a los ganaderos registrar y gestionar su ganado, predios y eventos relacionados con la actividad ganadera. Incluye funcionalidades avanzadas como lectura de códigos de barras, NFC, captura de ubicación GPS y carga de documentos.
+
+<p align="center">
+  <img src=".resources/img/1.png" width="30%" />
+  <img src=".resources/img/2.png" width="30%" />
+  <img src=".resources/img/3.png" width="30%" />
+</p>
+
+<p align="center">
+  <img src=".resources/img/4.png" width="30%" />
+  <img src=".resources/img/5.png" width="30%" />
+</p>
 
 ## ✨ Características
 
@@ -326,24 +343,3 @@ lib/
 
 - [API Documentation](API_DOCUMENTATION.md) - Documentación completa de la API REST
 
-## 🤝 Contribuir
-
-Las contribuciones son bienvenidas. Por favor, sigue estos pasos:
-
-1. Fork del proyecto
-2. Crea una rama para tu feature (`git checkout -b feature/AmazingFeature`)
-3. Commit de tus cambios (`git commit -m 'Add some AmazingFeature'`)
-4. Push a la rama (`git push origin feature/AmazingFeature`)
-5. Abre un Pull Request
-
-## 📄 Licencia
-
-Este proyecto es privado y propiedad de la Unión Ganadera.
-
-## 👥 Autores
-
-- Equipo de Desarrollo de la Unión Ganadera
-
-## 📞 Soporte
-
-Para soporte técnico o consultas, contacta a: [soporte@unionganadera.com](mailto:soporte@unionganadera.com)

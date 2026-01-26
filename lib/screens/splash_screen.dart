@@ -22,8 +22,9 @@ class _SplashScreenState extends State<SplashScreen> {
 
     if (!mounted) return;
 
-    // Check if user is logged in
+    // Initialize API client and check if user is logged in
     final apiClient = ApiClient();
+    await apiClient.initialize();
     final token = await apiClient.getToken();
 
     if (!mounted) return;

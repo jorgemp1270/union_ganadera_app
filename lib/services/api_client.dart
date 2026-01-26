@@ -7,10 +7,15 @@ import 'package:union_ganadera_app/screens/auth/auth_screen.dart';
 class ApiClient {
   static const String defaultBaseUrl = 'http://10.0.2.2:8000';
 
+  // Singleton pattern
+  static final ApiClient _instance = ApiClient._internal();
+  factory ApiClient() => _instance;
+
   final Dio dio;
   final FlutterSecureStorage storage = const FlutterSecureStorage();
+  bool _isInitialized = false;
 
-  ApiClient()
+  ApiClient._internal()
     : dio = Dio(
         BaseOptions(
           baseUrl: defaultBaseUrl,
@@ -20,7 +25,12 @@ class ApiClient {
         ),
       ) {
     _setupInterceptors();
-    _loadCustomBaseUrl();
+  }
+
+  Future<void> initialize() async {
+    if (_isInitialized) return;
+    await _loadCustomBaseUrl();
+    _isInitialized = true;
   }
 
   Future<void> _loadCustomBaseUrl() async {

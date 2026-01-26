@@ -29,7 +29,12 @@ class _LoginScreenState extends State<LoginScreen> {
   void initState() {
     super.initState();
     _authService = AuthService(_apiClient);
-    _loadSavedCredentials();
+    _initializeAndLoadCredentials();
+  }
+
+  Future<void> _initializeAndLoadCredentials() async {
+    await _apiClient.initialize();
+    await _loadSavedCredentials();
   }
 
   Future<void> _loadSavedCredentials() async {
