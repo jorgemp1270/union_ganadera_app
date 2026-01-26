@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:union_ganadera_app/models/bovino.dart';
 import 'package:union_ganadera_app/screens/cattle/cattle_detail_screen.dart';
 import 'package:union_ganadera_app/screens/cattle/register_cattle_screen.dart';
+import 'package:union_ganadera_app/screens/events/register_event_screen.dart';
 import 'package:union_ganadera_app/services/api_client.dart';
 import 'package:union_ganadera_app/services/bovino_service.dart';
 
@@ -16,7 +17,9 @@ class _CattleListScreenState extends State<CattleListScreen> {
   final ApiClient _apiClient = ApiClient();
   late final BovinoService _bovinoService;
   List<Bovino> _bovinos = [];
+  Set<String> _selectedBovinoIds = {};
   bool _isLoading = true;
+  bool _isSelectionMode = false;
   String _searchQuery = '';
 
   @override
@@ -68,9 +71,55 @@ class _CattleListScreenState extends State<CattleListScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Mi Ganado'),
+        title: Text(
+          _isSelectionMode
+              ? '${_selectedBovinoIds.length} seleccionados'
+              : 'Mi Ganado',
+        ),
         backgroundColor: Colors.green.shade700,
         foregroundColor: Colors.white,
+        leading:
+            _isSelectionMode
+                ? IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () {
+                    setState(() {
+                      _isSelectionMode = false;
+                      _selectedBovinoIds.clear();
+                    });
+                  },
+                )
+                : null,
+        actions:
+            _isSelectionMode
+                ? [
+                  if (_selectedBovinoIds.isNotEmpty)
+                    IconButton(
+                      icon: const Icon(Icons.event),
+                      tooltip: 'Registrar Evento',
+                      onPressed: () {
+                        final selectedBovinos =
+                            _bovinos
+                                .where((b) => _selectedBovinoIds.contains(b.id))
+                                .toList();
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder:
+                                (_) => RegisterEventScreen(
+                                  bovinos: selectedBovinos,
+                                ),
+                          ),
+                        ).then((_) {
+                          setState(() {
+                            _isSelectionMode = false;
+                            _selectedBovinoIds.clear();
+                          });
+                        });
+                      },
+                    ),
+                ]
+                : null,
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(60),
           child: Padding(
@@ -120,57 +169,118 @@ class _CattleListScreenState extends State<CattleListScreen> {
                   padding: const EdgeInsets.all(8),
                   itemBuilder: (context, index) {
                     final bovino = _filteredBovinos[index];
+                    final isSelected = _selectedBovinoIds.contains(bovino.id);
+
                     return Card(
                       margin: const EdgeInsets.symmetric(vertical: 4),
+                      color: isSelected ? Colors.green.shade50 : null,
                       child: ListTile(
-                        leading: CircleAvatar(
-                          backgroundColor: Colors.green.shade700,
-                          child: Icon(
-                            bovino.sexo == 'M' ? Icons.male : Icons.female,
-                            color: Colors.white,
-                          ),
-                        ),
+                        leading:
+                            _isSelectionMode
+                                ? Checkbox(
+                                  value: isSelected,
+                                  onChanged: (bool? value) {
+                                    setState(() {
+                                      if (value == true) {
+                                        _selectedBovinoIds.add(bovino.id);
+                                      } else {
+                                        _selectedBovinoIds.remove(bovino.id);
+                                      }
+                                    });
+                                  },
+                                  activeColor: Colors.green.shade700,
+                                )
+                                : CircleAvatar(
+                                  backgroundColor: Colors.green.shade700,
+                                  child: Icon(
+                                    bovino.sexo == 'M'
+                                        ? Icons.male
+                                        : Icons.female,
+                                    color: Colors.white,
+                                  ),
+                                ),
                         title: Text(
-                          bovino.areteBarcode ??
+                          bovino.nombre ??
+                              bovino.areteBarcode ??
                               bovino.areteRfid ??
-                              'Sin arete',
+                              'Sin identificación',
                           style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
                         subtitle: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            if (bovino.areteBarcode != null)
+                              Text('Arete: ${bovino.areteBarcode}'),
                             if (bovino.razaDominante != null)
                               Text('Raza: ${bovino.razaDominante}'),
                             if (bovino.pesoActual != null)
                               Text('Peso: ${bovino.pesoActual} kg'),
                           ],
                         ),
-                        trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                        trailing:
+                            _isSelectionMode
+                                ? null
+                                : const Icon(Icons.arrow_forward_ios, size: 16),
                         onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder:
-                                  (_) => CattleDetailScreen(bovino: bovino),
-                            ),
-                          ).then((_) => _loadBovinos());
+                          if (_isSelectionMode) {
+                            setState(() {
+                              if (isSelected) {
+                                _selectedBovinoIds.remove(bovino.id);
+                              } else {
+                                _selectedBovinoIds.add(bovino.id);
+                              }
+                            });
+                          } else {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder:
+                                    (_) => CattleDetailScreen(bovino: bovino),
+                              ),
+                            ).then((_) => _loadBovinos());
+                          }
                         },
                       ),
                     );
                   },
                 ),
               ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const RegisterCattleScreen()),
-          ).then((_) => _loadBovinos());
-        },
-        backgroundColor: Colors.green.shade700,
-        icon: const Icon(Icons.add),
-        label: const Text('Registrar Ganado'),
-      ),
+      floatingActionButton:
+          _isSelectionMode
+              ? null
+              : Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  FloatingActionButton.extended(
+                    heroTag: 'select_multiple',
+                    onPressed: () {
+                      setState(() {
+                        _isSelectionMode = true;
+                        _selectedBovinoIds.clear();
+                      });
+                    },
+                    backgroundColor: Colors.orange.shade700,
+                    icon: const Icon(Icons.checklist, color: Colors.white),
+                    label: const Text('Selección Múltiple'),
+                  ),
+                  const SizedBox(height: 12),
+                  FloatingActionButton.extended(
+                    heroTag: 'register_cattle',
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const RegisterCattleScreen(),
+                        ),
+                      ).then((_) => _loadBovinos());
+                    },
+                    backgroundColor: Colors.green.shade700,
+                    icon: const Icon(Icons.add),
+                    label: const Text('Registrar Ganado'),
+                  ),
+                ],
+              ),
     );
   }
 }

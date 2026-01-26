@@ -34,6 +34,7 @@ class Evento {
 // Peso event
 class PesoEvento extends Evento {
   final double pesoNuevo;
+  final double? pesoAnterior;
 
   PesoEvento({
     required super.id,
@@ -41,6 +42,7 @@ class PesoEvento extends Evento {
     required super.fecha,
     super.observaciones,
     required this.pesoNuevo,
+    this.pesoAnterior,
   });
 
   factory PesoEvento.fromJson(Map<String, dynamic> json) {
@@ -50,6 +52,7 @@ class PesoEvento extends Evento {
       fecha: DateTime.parse(json['fecha']),
       observaciones: json['observaciones'],
       pesoNuevo: json['peso_nuevo'].toDouble(),
+      pesoAnterior: json['peso_actual']?.toDouble(),
     );
   }
 }

@@ -8,31 +8,64 @@ Esta aplicación permite a los ganaderos registrar y gestionar su ganado, predio
 
 ## ✨ Características
 
-- **Autenticación de Usuarios**
-  - Registro con validación de INE y CURP
-  - Inicio de sesión con JWT
-  - Guardado de credenciales
-  - Configuración de API personalizable
+### Autenticación de Usuarios
+- Interfaz unificada con tabs (Iniciar Sesión / Registrarse)
+- Registro con validación de INE y CURP (formato automático en mayúsculas)
+- Autenticación JWT con manejo automático de sesiones
+- Guardado opcional de credenciales
+- Configuración de API personalizable (IP y puerto)
+- Cierre de sesión automático ante respuestas 401 (no autenticado)
+- Validación de contraseña con límite de 72 caracteres
 
-- **Gestión de Ganado**
-  - Registro de ganado con código de barras o NFC
-  - Consulta de detalles del ganado
-  - Historial de eventos por tipo
+### Gestión de Ganado
+- **Registro de ganado:**
+  - Escaneo de código de barras o tag NFC
+  - Captura de foto de la nariz del animal para identificación biométrica
+  - Selección de raza dominante mediante botones (8 opciones + "Otro")
+  - Selección de propósito mediante botones (6 opciones + "Otro")
+  - Selección de status mediante botones (7 opciones + "Otro")
+  - Campos para identificación de madre, padre y predio de origen
+- **Consulta de ganado:**
+  - Vista detallada con diseño de cuadrícula organizada
+  - Información estructurada en bloques: Identificación, Información General, Datos de Peso
+  - Encabezado con gradiente y badge de status
+- **Edición de ganado:**
+  - Botón flotante de edición en la vista detallada
+  - Interfaz idéntica al registro con datos pre-cargados
+- **Selección múltiple:**
+  - Modo de selección múltiple con checkboxes
+  - Registro de eventos masivos para varios animales simultáneamente
+- **Historial de eventos:**
+  - Visualización por tipo de evento
+  - Detalles de peso mostrando peso nuevo y peso anterior
 
-- **Gestión de Predios**
-  - Registro de predios con captura de ubicación GPS
-  - Carga de documentos (comprobante de propiedad, uso de suelo)
-  - Lista y detalles de predios registrados
+### Gestión de Predios
+- Registro de predios con captura de ubicación GPS automática
+- Modal bottom sheet optimizado para móviles (reemplaza diálogos)
+- Carga de documentos (comprobante de propiedad, uso de suelo)
+- Lista y detalles de predios registrados
+- Manejo adaptativo de teclado en formularios
 
-- **Registro de Eventos**
-  - 9 tipos de eventos: Peso, Dieta, Vacunación, Desparasitación, Laboratorio, Compra/Venta, Traslado, Enfermedad, Tratamiento
-  - Registro individual o múltiple
-  - Historial completo de eventos
+### Registro de Eventos
+- **9 tipos de eventos disponibles:**
+  - Peso (con historial de peso anterior)
+  - Dieta
+  - Vacunación
+  - Desparasitación
+  - Laboratorio
+  - Compra/Venta
+  - Traslado
+  - Enfermedad
+  - Tratamiento
+- Registro individual o múltiple (selección masiva)
+- Historial completo de eventos agrupados por tipo
+- Visualización de eventos con detalles específicos según el tipo
 
-- **Perfil de Usuario**
-  - Visualización de datos personales
-  - Carga de documentos (INE frontal/trasera, comprobante de domicilio)
-  - Configuración de la aplicación
+### Perfil de Usuario
+- Visualización de datos personales
+- Carga de documentos (INE frontal/trasera, comprobante de domicilio)
+- Botón de cierre de sesión destacado
+- Configuración de la aplicación
 
 ## 🛠️ Requisitos Previos
 
@@ -100,10 +133,30 @@ La aplicación requiere los siguientes permisos:
 - WRITE_EXTERNAL_STORAGE
 
 **iOS** (configurados en `ios/Runner/Info.plist`):
-- NSCameraUsageDescription
-- NSLocationWhenInUseUsageDescription
-- NSPhotoLibraryUsageDescription
-- NFCReaderUsageDescription
+- NSCameraUsageDescription (cámara para fotos de nariz y documentos)
+- NSLocationWhenInUseUsageDescription (GPS para predios)
+- NSPhotoLibraryUsageDescription (galería de fotos)
+- NFCReaderUsageDescription (lectura de tags NFC)
+
+## 🎨 Características de Diseño
+
+### Material Design 3
+- Paleta de colores consistente con tema verde para ganadería
+- Tipografía Roboto con jerarquía clara
+- Elevaciones y sombras sutiles para profundidad
+
+### Componentes Personalizados
+- **Button Groups:** ChoiceChip wraps para opciones múltiples (raza, propósito, status)
+- **Grid Layout:** Cards con iconos para información estructurada
+- **Modal Sheets:** Bottom sheets con bordes redondeados y manejo de teclado
+- **FABs Extendidos:** Botones flotantes con etiquetas para mejor UX
+- **Gradientes:** Headers con gradientes para destacar información clave
+
+### Responsive & Adaptativo
+- Diseño optimizado para pantallas móviles
+- Manejo automático de teclado en formularios
+- ScrollController para listas largas
+- SafeArea para notches y barras de sistema
 
 ## 🚀 Ejecución
 
@@ -128,79 +181,146 @@ flutter run -d <device_id>
 
 ## 📱 Uso de la Aplicación
 
-1. **Primer Uso**
-   - Configura la dirección del servidor API si es necesario
-   - Regístrate con tus datos personales
-   - Completa la validación de INE y CURP
+### Primer Uso
+1. **Configuración inicial:**
+   - Presiona el ícono de engranaje (⚙️) en la pantalla de autenticación
+   - Configura la dirección del servidor API si es diferente a la predeterminada
+   - Guarda los cambios
 
-2. **Gestión de Ganado**
+2. **Registro de usuario:**
+   - En la pantalla de autenticación, ve a la tab "Registrarse"
+   - Completa todos los campos requeridos
+   - Ingresa CURP en mayúsculas (el campo formatea automáticamente)
+   - Usa una contraseña de máximo 72 caracteres
+   - Valida con INE y CURP
+   - Envía el registro
+
+3. **Inicio de sesión:**
+   - Ve a la tab "Iniciar Sesión"
+   - Ingresa CURP y contraseña
+   - (Opcional) Activa "Recordar credenciales" para guardarlas
+   - Presiona "Iniciar Sesión"
+
+### Gestión de Ganado
+1. **Registrar nuevo ganado:**
    - Desde el menú principal, selecciona "Ganado"
-   - Registra nuevo ganado escaneando código de barras o tag NFC
-   - Consulta el historial de eventos por animal
+   - Presiona el botón verde "Registrar Ganado"
+   - Escanea código de barras o tag NFC del animal
+   - Selecciona raza dominante (8 opciones predefinidas o "Otro" para ingresar manualmente)
+   - Selecciona propósito (6 opciones predefinidas o "Otro")
+   - Selecciona status (7 opciones predefinidas o "Otro")
+   - Captura foto de la nariz del animal (cámara o galería)
+   - Completa campos adicionales (madre, padre, predio)
+   - Guarda el registro
 
-3. **Gestión de Predios**
+2. **Consultar ganado:**
+   - Lista todos los animales registrados
+   - Toca un animal para ver sus detalles en formato de cuadrícula
+   - Revisa información organizada por bloques
+
+3. **Editar ganado:**
+   - En la vista detallada del animal, presiona el botón flotante de edición (lápiz)
+   - Modifica los campos necesarios
+   - Actualiza la foto de la nariz si es necesario
+   - Guarda los cambios
+
+4. **Selección múltiple:**
+   - Presiona el botón naranja "Selección Múltiple"
+   - Selecciona varios animales usando los checkboxes
+   - Registra eventos para todos los seleccionados simultáneamente
+
+5. **Consultar historial:**
+   - En la vista detallada, revisa el historial de eventos agrupados por tipo
+   - Para eventos de peso, se muestra el peso nuevo y el peso anterior
+
+### Gestión de Predios
+1. **Registrar predio:**
    - Accede a "Predios" desde el menú
-   - Registra un nuevo predio con ubicación GPS
-   - Sube los documentos requeridos
+   - Presiona "Registrar Predio"
+   - Se abrirá un modal optimizado para móviles
+   - Completa nombre y ubicación (GPS captura automáticamente)
+   - Sube documentos requeridos (propiedad y uso de suelo)
+   - Guarda el predio
 
-4. **Registro de Eventos**
+2. **Consultar predios:**
+   - Lista todos los predios registrados
+   - Toca un predio para ver detalles y documentos
+
+### Registro de Eventos
+1. **Evento individual:**
    - Selecciona "Eventos" en el menú
-   - Elige el tipo de evento a registrar
-   - Completa el formulario y envía
+   - Elige el animal para el evento
+   - Selecciona el tipo de evento
+   - Completa el formulario específico del evento
+   - Envía el registro
+
+2. **Evento múltiple:**
+   - Activa el modo de selección múltiple en la lista de ganado
+   - Selecciona los animales
+   - Registra el evento (se aplicará a todos los seleccionados)
 
 ## 📂 Estructura del Proyecto
 
 ```
 lib/
-├── main.dart                    # Punto de entrada de la aplicación
-├── models/                      # Modelos de datos
-│   ├── user.dart
-│   ├── ganado.dart
-│   ├── predio.dart
-│   └── evento.dart
-├── services/                    # Servicios de API y lógica de negocio
-│   ├── api_client.dart
-│   ├── auth_service.dart
-│   ├── ganado_service.dart
-│   ├── predio_service.dart
-│   ├── evento_service.dart
-│   └── file_service.dart
-├── screens/                     # Pantallas de la aplicación
+├── main.dart                           # Punto de entrada con navegación global
+├── models/                             # Modelos de datos
+│   ├── user.dart                       # Usuario con validación de CURP
+│   ├── bovino.dart                     # Ganado con campos extendidos
+│   ├── predio.dart                     # Predios con GPS
+│   └── evento.dart                     # 9 tipos de eventos (incluyendo PesoEvento)
+├── services/                           # Servicios de API y lógica de negocio
+│   ├── api_client.dart                 # Cliente Dio con interceptores JWT y manejo 401
+│   ├── auth_service.dart               # Autenticación y registro
+│   ├── bovino_service.dart             # CRUD de ganado + upload de foto nariz
+│   ├── predio_service.dart             # CRUD de predios
+│   ├── evento_service.dart             # Registro de eventos por tipo
+│   └── file_service.dart               # Carga de documentos multipart
+├── screens/                            # Pantallas de la aplicación
 │   ├── auth/
-│   │   ├── auth_screen.dart    # Pantalla de autenticación con tabs
-│   │   └── signup_screen.dart
+│   │   ├── auth_screen.dart            # Autenticación con tabs (Login/Signup)
+│   │   └── signup_screen.dart          # Formulario de registro
 │   ├── home/
-│   │   └── home_screen.dart
+│   │   └── home_screen.dart            # Pantalla principal con navegación
 │   ├── cattle/
-│   │   ├── ganado_list_screen.dart
-│   │   ├── register_ganado_screen.dart
-│   │   └── cattle_detail_screen.dart
+│   │   ├── cattle_list_screen.dart     # Lista con selección múltiple
+│   │   ├── register_cattle_screen.dart # Registro con button groups y foto nariz
+│   │   ├── edit_cattle_screen.dart     # Edición con datos pre-cargados
+│   │   └── cattle_detail_screen.dart   # Vista detallada con diseño grid
 │   ├── predios/
-│   │   ├── predio_list_screen.dart
-│   │   ├── register_predio_screen.dart
-│   │   └── predio_detail_screen.dart
+│   │   ├── predios_screen.dart         # Lista + modal de registro
+│   │   └── predio_detail_screen.dart   # Detalles del predio
 │   ├── events/
-│   │   └── register_event_screen.dart
+│   │   └── register_event_screen.dart  # Registro de eventos por tipo
 │   ├── profile/
-│   │   └── profile_screen.dart
+│   │   └── profile_screen.dart         # Perfil con carga de documentos
 │   └── settings/
-│       └── api_settings_screen.dart
-├── utils/                       # Utilidades
-│   └── curp_validator.dart     # Validador de CURP (RFC)
-└── widgets/                     # Widgets reutilizables
+│       └── api_settings_screen.dart    # Configuración de IP/Puerto API
+├── utils/                              # Utilidades
+│   └── curp_validator.dart             # Validador RFC de CURP
+└── widgets/                            # Widgets reutilizables
+    └── (componentes compartidos)
 ```
 
 ## 🔧 Tecnologías Utilizadas
 
-- **Framework:** Flutter 3.7.2+
-- **Lenguaje:** Dart
-- **HTTP Client:** dio (^5.4.0)
-- **Almacenamiento Seguro:** flutter_secure_storage (^9.0.0)
-- **Gestión de Estado:** provider (^6.1.1)
-- **Imágenes:** image_picker (^1.0.7), file_picker (^6.1.1)
+- **Framework:** Flutter 3.7.2+ con Material Design 3
+- **Lenguaje:** Dart 2.19.0+
+- **HTTP Client:** dio (^5.4.0) con interceptores JWT
+- **Almacenamiento Seguro:** flutter_secure_storage (^9.0.0) para tokens y credenciales
+- **Gestión de Estado:** provider (^6.1.1), StatefulWidget, GlobalKey<NavigatorState>
+- **Imágenes:** image_picker (^1.0.7) para fotos de nariz y documentos
 - **Ubicación:** geolocator (^11.0.0), permission_handler (^11.2.0)
-- **Escaneo:** mobile_scanner (^3.5.5), nfc_manager (^3.3.0)
+- **Escaneo:** mobile_scanner (^3.5.5) para códigos de barras, nfc_manager (^3.3.0)
 - **Internacionalización:** intl (^0.19.0)
+- **UI Components:** ChoiceChip, Modal Bottom Sheets, FloatingActionButton.extended
+
+### Patrones y Arquitectura
+- **Autenticación:** JWT con refresh automático y manejo global de errores 401
+- **Navegación:** GlobalKey para navegación desde interceptores
+- **Formularios:** Button groups con ChoiceChip para opciones múltiples
+- **Upload:** Multipart/form-data para fotos y documentos
+- **UX Móvil:** Modal bottom sheets, FABs extendidos, diseño grid responsivo
 
 ## 📖 Documentación Adicional
 

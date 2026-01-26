@@ -1,20 +1,20 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:mobile_scanner/mobile_scanner.dart';
-import 'package:nfc_manager/nfc_manager.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:union_ganadera_app/models/bovino.dart';
 import 'package:union_ganadera_app/services/api_client.dart';
 import 'package:union_ganadera_app/services/bovino_service.dart';
 
-class RegisterCattleScreen extends StatefulWidget {
-  const RegisterCattleScreen({super.key});
+class EditCattleScreen extends StatefulWidget {
+  final Bovino bovino;
+
+  const EditCattleScreen({super.key, required this.bovino});
 
   @override
-  State<RegisterCattleScreen> createState() => _RegisterCattleScreenState();
+  State<EditCattleScreen> createState() => _EditCattleScreenState();
 }
 
-class _RegisterCattleScreenState extends State<RegisterCattleScreen> {
+class _EditCattleScreenState extends State<EditCattleScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nombreController = TextEditingController();
   final _areteBarcodeController = TextEditingController();
@@ -34,7 +34,6 @@ class _RegisterCattleScreenState extends State<RegisterCattleScreen> {
   bool _showOtherStatus = false;
   File? _nosePhoto;
   bool _isLoading = false;
-  bool _nfcAvailable = false;
 
   final ApiClient _apiClient = ApiClient();
   late final BovinoService _bovinoService;
@@ -78,7 +77,48 @@ class _RegisterCattleScreenState extends State<RegisterCattleScreen> {
   void initState() {
     super.initState();
     _bovinoService = BovinoService(_apiClient);
-    _checkNfcAvailability();
+    _loadBovinoData();
+  }
+
+  void _loadBovinoData() {
+    _nombreController.text = widget.bovino.nombre ?? '';
+    _areteBarcodeController.text = widget.bovino.areteBarcode ?? '';
+    _areteRfidController.text = widget.bovino.areteRfid ?? '';
+    _pesoNacController.text = widget.bovino.pesoNac?.toString() ?? '';
+    _pesoActualController.text = widget.bovino.pesoActual?.toString() ?? '';
+    _fechaNacimiento = widget.bovino.fechaNac;
+    _sexo = widget.bovino.sexo ?? 'M';
+
+    // Set raza
+    if (widget.bovino.razaDominante != null) {
+      if (_razas.contains(widget.bovino.razaDominante)) {
+        _selectedRaza = widget.bovino.razaDominante;
+      } else {
+        _selectedRaza = 'Otro';
+        _razaDominanteController.text = widget.bovino.razaDominante!;
+        _showOtherRaza = true;
+      }
+    }
+
+    // Set proposito
+    if (widget.bovino.proposito != null) {
+      if (_propositos.contains(widget.bovino.proposito)) {
+        _selectedProposito = widget.bovino.proposito;
+      } else {
+        _selectedProposito = 'Otro';
+        _propositoController.text = widget.bovino.proposito!;
+        _showOtherProposito = true;
+      }
+    }
+
+    // Set status
+    if (_estados.contains(widget.bovino.status)) {
+      _selectedStatus = widget.bovino.status;
+    } else {
+      _selectedStatus = 'Otro';
+      _statusController.text = widget.bovino.status;
+      _showOtherStatus = true;
+    }
   }
 
   @override
@@ -94,75 +134,10 @@ class _RegisterCattleScreenState extends State<RegisterCattleScreen> {
     super.dispose();
   }
 
-  Future<void> _checkNfcAvailability() async {
-    if (Platform.isAndroid || Platform.isIOS) {
-      final isAvailable = await NfcManager.instance.isAvailable();
-      setState(() => _nfcAvailable = isAvailable);
-    }
-  }
-
-  Future<void> _scanBarcode() async {
-    await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder:
-            (context) => Scaffold(
-              appBar: AppBar(
-                title: const Text('Escanear Código de Barras'),
-                backgroundColor: Colors.green.shade700,
-                foregroundColor: Colors.white,
-              ),
-              body: MobileScanner(
-                onDetect: (capture) {
-                  final List<Barcode> barcodes = capture.barcodes;
-                  if (barcodes.isNotEmpty) {
-                    final String? code = barcodes.first.rawValue;
-                    if (code != null) {
-                      setState(() {
-                        _areteBarcodeController.text = code;
-                      });
-                      Navigator.of(context).pop();
-                    }
-                  }
-                },
-              ),
-            ),
-      ),
-    );
-  }
-
-  Future<void> _scanNFC() async {
-    if (!_nfcAvailable) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('NFC no disponible en este dispositivo')),
-      );
-      return;
-    }
-
-    try {
-      await NfcManager.instance.startSession(
-        onDiscovered: (NfcTag tag) async {
-          final ndefMessage = tag.data['ndef'];
-          if (ndefMessage != null) {
-            // Extract NFC data here
-            setState(() {
-              _areteRfidController.text =
-                  tag.data['nfca']?['identifier']?.toString() ?? '';
-            });
-          }
-          await NfcManager.instance.stopSession();
-        },
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error al leer NFC: $e')));
-    }
-  }
-
   Future<void> _selectDate() async {
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: DateTime.now(),
+      initialDate: _fechaNacimiento ?? DateTime.now(),
       firstDate: DateTime(2000),
       lastDate: DateTime.now(),
       locale: const Locale('es', 'MX'),
@@ -248,60 +223,58 @@ class _RegisterCattleScreenState extends State<RegisterCattleScreen> {
       }
 
       // Determine status
-      String status = 'activo'; // Default
+      String status = widget.bovino.status; // Keep current if not changed
       if (_selectedStatus != null) {
         if (_selectedStatus == 'Otro') {
           status =
               _statusController.text.trim().isEmpty
-                  ? 'activo'
+                  ? widget.bovino.status
                   : _statusController.text.trim();
         } else {
           status = _selectedStatus!;
         }
       }
 
-      final bovino = Bovino(
-        id: '',
-        usuarioId: '',
-        nombre:
+      final updates = {
+        'nombre':
             _nombreController.text.trim().isEmpty
                 ? null
                 : _nombreController.text.trim(),
-        areteBarcode:
+        'arete_barcode':
             _areteBarcodeController.text.trim().isEmpty
                 ? null
                 : _areteBarcodeController.text.trim(),
-        areteRfid:
+        'arete_rfid':
             _areteRfidController.text.trim().isEmpty
                 ? null
                 : _areteRfidController.text.trim(),
-        razaDominante: razaDominante,
-        fechaNac: _fechaNacimiento,
-        sexo: _sexo,
-        pesoNac:
+        'raza_dominante': razaDominante,
+        'fecha_nac': _fechaNacimiento?.toIso8601String().split('T')[0],
+        'sexo': _sexo,
+        'peso_nac':
             _pesoNacController.text.trim().isEmpty
                 ? null
                 : double.tryParse(_pesoNacController.text.trim()),
-        pesoActual:
+        'peso_actual':
             _pesoActualController.text.trim().isEmpty
                 ? null
                 : double.tryParse(_pesoActualController.text.trim()),
-        proposito: proposito,
-        status: status,
-      );
+        'proposito': proposito,
+        'status': status,
+      }..removeWhere((key, value) => value == null);
 
-      final createdBovino = await _bovinoService.createBovino(bovino);
+      await _bovinoService.updateBovino(widget.bovino.id, updates);
 
       // Upload nose photo if selected
       if (_nosePhoto != null) {
         try {
-          await _bovinoService.uploadNosePhoto(createdBovino.id, _nosePhoto!);
+          await _bovinoService.uploadNosePhoto(widget.bovino.id, _nosePhoto!);
         } catch (e) {
-          // Show warning but don't fail the registration
+          // Show warning but don't fail the update
           if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Ganado registrado, pero error al subir foto: $e'),
+              content: Text('Bovino actualizado, pero error al subir foto: $e'),
               backgroundColor: Colors.orange,
             ),
           );
@@ -312,12 +285,12 @@ class _RegisterCattleScreenState extends State<RegisterCattleScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Ganado registrado exitosamente'),
+          content: Text('Bovino actualizado exitosamente'),
           backgroundColor: Colors.green,
         ),
       );
 
-      Navigator.of(context).pop();
+      Navigator.of(context).pop(true); // Return true to indicate success
     } catch (e) {
       if (!mounted) return;
 
@@ -338,7 +311,7 @@ class _RegisterCattleScreenState extends State<RegisterCattleScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Registrar Ganado'),
+        title: const Text('Editar Ganado'),
         backgroundColor: Colors.green.shade700,
         foregroundColor: Colors.white,
       ),
@@ -356,28 +329,17 @@ class _RegisterCattleScreenState extends State<RegisterCattleScreen> {
               const SizedBox(height: 16),
               TextFormField(
                 controller: _areteBarcodeController,
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   labelText: 'Arete Código de Barras',
-                  border: const OutlineInputBorder(),
-                  suffixIcon: IconButton(
-                    icon: const Icon(Icons.qr_code_scanner),
-                    onPressed: _scanBarcode,
-                  ),
+                  border: OutlineInputBorder(),
                 ),
               ),
               const SizedBox(height: 16),
               TextFormField(
                 controller: _areteRfidController,
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   labelText: 'Arete RFID/NFC',
-                  border: const OutlineInputBorder(),
-                  suffixIcon:
-                      _nfcAvailable
-                          ? IconButton(
-                            icon: const Icon(Icons.nfc),
-                            onPressed: _scanNFC,
-                          )
-                          : null,
+                  border: OutlineInputBorder(),
                 ),
               ),
               const SizedBox(height: 24),
@@ -564,7 +526,7 @@ class _RegisterCattleScreenState extends State<RegisterCattleScreen> {
               ),
               const SizedBox(height: 8),
               const Text(
-                'La nariz del ganado es única como una huella digital',
+                'Actualizar la foto de la nariz del ganado',
                 style: TextStyle(fontSize: 12, color: Colors.grey),
               ),
               const SizedBox(height: 16),
@@ -612,7 +574,7 @@ class _RegisterCattleScreenState extends State<RegisterCattleScreen> {
                   onPressed: () => setState(() => _nosePhoto = null),
                   icon: const Icon(Icons.delete, color: Colors.red),
                   label: const Text(
-                    'Eliminar Foto',
+                    'Eliminar Foto Nueva',
                     style: TextStyle(color: Colors.red),
                   ),
                 ),
@@ -638,7 +600,7 @@ class _RegisterCattleScreenState extends State<RegisterCattleScreen> {
                           ),
                         )
                         : const Text(
-                          'Registrar Ganado',
+                          'Guardar Cambios',
                           style: TextStyle(fontSize: 16),
                         ),
               ),

@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:union_ganadera_app/models/bovino.dart';
 import 'package:union_ganadera_app/services/api_client.dart';
@@ -65,6 +66,29 @@ class BovinoService {
         throw Exception('Bovino no encontrado');
       }
       throw Exception('Error al eliminar bovino: ${e.message}');
+    }
+  }
+
+  Future<Bovino> uploadNosePhoto(String bovinoId, File imageFile) async {
+    try {
+      final fileName = imageFile.path.split('/').last;
+      final formData = FormData.fromMap({
+        'file': await MultipartFile.fromFile(
+          imageFile.path,
+          filename: fileName,
+        ),
+      });
+
+      final response = await apiClient.dio.post(
+        '/bovinos/$bovinoId/upload-nose-photo',
+        data: formData,
+      );
+      return Bovino.fromJson(response.data);
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 403) {
+        throw Exception('No autorizado para subir foto para este bovino');
+      }
+      throw Exception('Error al subir foto de nariz: ${e.message}');
     }
   }
 }

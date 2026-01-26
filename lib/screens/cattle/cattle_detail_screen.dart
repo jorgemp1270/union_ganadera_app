@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:union_ganadera_app/models/bovino.dart';
 import 'package:union_ganadera_app/models/evento.dart';
 import 'package:union_ganadera_app/screens/events/register_event_screen.dart';
+import 'package:union_ganadera_app/screens/cattle/edit_cattle_screen.dart';
 import 'package:union_ganadera_app/services/api_client.dart';
 import 'package:union_ganadera_app/services/evento_service.dart';
 import 'package:intl/intl.dart';
@@ -73,69 +74,161 @@ class _CattleDetailScreenState extends State<CattleDetailScreen> {
         backgroundColor: Colors.green.shade700,
         foregroundColor: Colors.white,
       ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () async {
+          final result = await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => EditCattleScreen(bovino: widget.bovino),
+            ),
+          );
+          if (result == true) {
+            // Reload the bovino data if edit was successful
+            // For now, just pop back to refresh from the list
+            if (!mounted) return;
+            Navigator.pop(context);
+          }
+        },
+        backgroundColor: Colors.green.shade700,
+        child: const Icon(Icons.edit, color: Colors.white),
+      ),
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            // Header Section
             Container(
               padding: const EdgeInsets.all(24),
-              color: Colors.green.shade50,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Colors.green.shade700, Colors.green.shade500],
+                ),
+              ),
               child: Column(
                 children: [
                   Icon(
                     widget.bovino.sexo == 'M' ? Icons.male : Icons.female,
                     size: 80,
-                    color: Colors.green.shade700,
+                    color: Colors.white,
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    widget.bovino.areteBarcode ?? widget.bovino.areteRfid ?? 'Sin identificación',
+                    widget.bovino.nombre ??
+                        widget.bovino.areteBarcode ??
+                        widget.bovino.areteRfid ??
+                        'Sin identificación',
                     style: const TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
+                      color: Colors.white,
                     ),
+                    textAlign: TextAlign.center,
                   ),
                   if (widget.bovino.razaDominante != null)
                     Text(
                       widget.bovino.razaDominante!,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 18,
-                        color: Colors.grey.shade700,
+                        color: Colors.white70,
                       ),
                     ),
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      widget.bovino.status.toUpperCase(),
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.green.shade700,
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
+
+            // Information Grid
             Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'Información General',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    'Identificación',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
-                  const SizedBox(height: 16),
-                  _buildInfoRow('Arete Barcode', widget.bovino.areteBarcode),
-                  _buildInfoRow('Arete RFID', widget.bovino.areteRfid),
-                  _buildInfoRow('Sexo', widget.bovino.sexo == 'M' ? 'Macho' : 'Hembra'),
-                  _buildInfoRow('Fecha de Nacimiento',
-                    widget.bovino.fechaNac != null
-                      ? dateFormat.format(widget.bovino.fechaNac!)
-                      : null),
-                  _buildInfoRow('Peso Nacimiento',
-                    widget.bovino.pesoNac != null
-                      ? '${widget.bovino.pesoNac} kg'
-                      : null),
-                  _buildInfoRow('Peso Actual',
-                    widget.bovino.pesoActual != null
-                      ? '${widget.bovino.pesoActual} kg'
-                      : null),
-                  _buildInfoRow('Propósito', widget.bovino.proposito),
-                  _buildInfoRow('Estado', widget.bovino.status),
+                  const SizedBox(height: 12),
+                  _buildInfoGrid([
+                    if (widget.bovino.areteBarcode != null)
+                      _InfoGridItem(
+                        icon: Icons.qr_code,
+                        label: 'Arete Barcode',
+                        value: widget.bovino.areteBarcode!,
+                      ),
+                    if (widget.bovino.areteRfid != null)
+                      _InfoGridItem(
+                        icon: Icons.nfc,
+                        label: 'Arete RFID',
+                        value: widget.bovino.areteRfid!,
+                      ),
+                  ]),
+                  const SizedBox(height: 24),
+                  const Text(
+                    'Información General',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 12),
+                  _buildInfoGrid([
+                    _InfoGridItem(
+                      icon:
+                          widget.bovino.sexo == 'M' ? Icons.male : Icons.female,
+                      label: 'Sexo',
+                      value: widget.bovino.sexo == 'M' ? 'Macho' : 'Hembra',
+                    ),
+                    if (widget.bovino.fechaNac != null)
+                      _InfoGridItem(
+                        icon: Icons.cake,
+                        label: 'Fecha Nacimiento',
+                        value: dateFormat.format(widget.bovino.fechaNac!),
+                      ),
+                    if (widget.bovino.proposito != null)
+                      _InfoGridItem(
+                        icon: Icons.work_outline,
+                        label: 'Propósito',
+                        value: widget.bovino.proposito!,
+                      ),
+                  ]),
+                  const SizedBox(height: 24),
+                  const Text(
+                    'Datos de Peso',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 12),
+                  _buildInfoGrid([
+                    if (widget.bovino.pesoNac != null)
+                      _InfoGridItem(
+                        icon: Icons.baby_changing_station,
+                        label: 'Peso Nacimiento',
+                        value: '${widget.bovino.pesoNac} kg',
+                      ),
+                    if (widget.bovino.pesoActual != null)
+                      _InfoGridItem(
+                        icon: Icons.monitor_weight,
+                        label: 'Peso Actual',
+                        value: '${widget.bovino.pesoActual} kg',
+                        highlighted: true,
+                      ),
+                  ]),
                   const SizedBox(height: 24),
                   Row(
                     children: [
@@ -152,9 +245,10 @@ class _CattleDetailScreenState extends State<CattleDetailScreen> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (_) => RegisterEventScreen(
-                                bovinos: [widget.bovino],
-                              ),
+                              builder:
+                                  (_) => RegisterEventScreen(
+                                    bovinos: [widget.bovino],
+                                  ),
                             ),
                           ).then((_) => _loadEventos());
                         },
@@ -275,9 +369,19 @@ class _CattleDetailScreenState extends State<CattleDetailScreen> {
 
   Widget _buildEventDetails(Evento evento) {
     if (evento is PesoEvento) {
-      return Text(
-        'Peso: ${evento.pesoNuevo} kg',
-        style: const TextStyle(fontSize: 12, color: Colors.grey),
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Peso Nuevo: ${evento.pesoNuevo} kg',
+            style: const TextStyle(fontSize: 12, color: Colors.grey),
+          ),
+          if (evento.pesoAnterior != null)
+            Text(
+              'Peso Anterior: ${evento.pesoAnterior} kg',
+              style: const TextStyle(fontSize: 11, color: Colors.grey),
+            ),
+        ],
       );
     } else if (evento is DietaEvento) {
       return Text(
@@ -317,33 +421,95 @@ class _CattleDetailScreenState extends State<CattleDetailScreen> {
     }
     return const SizedBox.shrink();
   }
-  }
 
-  Widget _buildInfoRow(String label, String? value) {
-    if (value == null) return const SizedBox.shrink();
+  Widget _buildInfoGrid(List<_InfoGridItem> items) {
+    if (items.isEmpty) return const SizedBox.shrink();
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 150,
-            child: Text(
-              label,
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Colors.grey,
+    return GridView.count(
+      crossAxisCount: 2,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      mainAxisSpacing: 12,
+      crossAxisSpacing: 12,
+      childAspectRatio: 2.5,
+      children:
+          items.map((item) {
+            return Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color:
+                    item.highlighted
+                        ? Colors.green.shade50
+                        : Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color:
+                      item.highlighted
+                          ? Colors.green.shade300
+                          : Colors.grey.shade300,
+                  width: item.highlighted ? 2 : 1,
+                ),
               ),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(fontSize: 16),
-            ),
-          ),
-        ],
-      ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        item.icon,
+                        size: 18,
+                        color:
+                            item.highlighted
+                                ? Colors.green.shade700
+                                : Colors.grey.shade600,
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          item.label,
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.grey.shade600,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    item.value,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color:
+                          item.highlighted
+                              ? Colors.green.shade700
+                              : Colors.grey.shade900,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                  ),
+                ],
+              ),
+            );
+          }).toList(),
     );
   }
+}
+
+class _InfoGridItem {
+  final IconData icon;
+  final String label;
+  final String value;
+  final bool highlighted;
+
+  _InfoGridItem({
+    required this.icon,
+    required this.label,
+    required this.value,
+    this.highlighted = false,
+  });
+}

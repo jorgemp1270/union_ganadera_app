@@ -1,5 +1,8 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:union_ganadera_app/main.dart';
+import 'package:union_ganadera_app/screens/auth/auth_screen.dart';
 
 class ApiClient {
   static const String defaultBaseUrl = 'http://10.0.2.2:8000';
@@ -11,8 +14,8 @@ class ApiClient {
     : dio = Dio(
         BaseOptions(
           baseUrl: defaultBaseUrl,
-          connectTimeout: const Duration(seconds: 10),
-          receiveTimeout: const Duration(seconds: 10),
+          connectTimeout: const Duration(seconds: 60),
+          receiveTimeout: const Duration(seconds: 60),
           headers: {'Content-Type': 'application/json'},
         ),
       ) {
@@ -46,9 +49,17 @@ class ApiClient {
         },
         onError: (error, handler) async {
           if (error.response?.statusCode == 401) {
-            // Token expired, clear storage
-            await storage.delete(key: 'access_token');
-            // Navigation will be handled by the UI
+            // Token expired or not authenticated, clear all credentials
+            await storage.deleteAll();
+
+            // Navigate to auth screen
+            final context = navigatorKey.currentContext;
+            if (context != null && context.mounted) {
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(builder: (_) => const AuthScreen()),
+                (route) => false,
+              );
+            }
           }
           return handler.next(error);
         },

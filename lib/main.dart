@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:union_ganadera_app/screens/splash_screen.dart';
 
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
 void main() {
   runApp(const MyApp());
 }
@@ -12,6 +14,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: navigatorKey,
       title: 'Unión Ganadera',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
@@ -35,10 +38,7 @@ class MyApp extends StatelessWidget {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      supportedLocales: const [
-        Locale('es', 'MX'),
-        Locale('es', ''),
-      ],
+      supportedLocales: const [Locale('es', 'MX'), Locale('es', '')],
       locale: const Locale('es', 'MX'),
       home: const SplashScreen(),
     );

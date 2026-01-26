@@ -42,9 +42,9 @@ class _PrediosScreenState extends State<PrediosScreen> {
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: ${e.toString()}')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
       }
     }
   }
@@ -57,64 +57,74 @@ class _PrediosScreenState extends State<PrediosScreen> {
         backgroundColor: Colors.green.shade700,
         foregroundColor: Colors.white,
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _predios.isEmpty
+      body:
+          _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : _predios.isEmpty
               ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.location_on, size: 80, color: Colors.grey.shade400),
-                      const SizedBox(height: 16),
-                      Text(
-                        'No tienes predios registrados',
-                        style: TextStyle(
-                          fontSize: 18,
-                          color: Colors.grey.shade600,
-                        ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.location_on,
+                      size: 80,
+                      color: Colors.grey.shade400,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'No tienes predios registrados',
+                      style: TextStyle(
+                        fontSize: 18,
+                        color: Colors.grey.shade600,
                       ),
-                    ],
-                  ),
-                )
-              : RefreshIndicator(
-                  onRefresh: _loadPredios,
-                  child: ListView.builder(
-                    itemCount: _predios.length,
-                    padding: const EdgeInsets.all(8),
-                    itemBuilder: (context, index) {
-                      final predio = _predios[index];
-                      return Card(
-                        margin: const EdgeInsets.symmetric(vertical: 4),
-                        child: ListTile(
-                          leading: CircleAvatar(
-                            backgroundColor: Colors.green.shade700,
-                            child: const Icon(
-                              Icons.location_on,
-                              color: Colors.white,
-                            ),
-                          ),
-                          title: Text(
-                            predio.claveCatastral ?? 'Sin clave catastral',
-                            style: const TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              if (predio.superficieTotal != null)
-                                Text('Superficie: ${predio.superficieTotal} hectáreas'),
-                              if (predio.latitud != null && predio.longitud != null)
-                                Text('Lat: ${predio.latitud}, Long: ${predio.longitud}'),
-                            ],
-                          ),
-                          trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                          onTap: () {
-                            // Navigate to predio detail if needed
-                          },
-                        ),
-                      );
-                    },
-                  ),
+                    ),
+                  ],
                 ),
+              )
+              : RefreshIndicator(
+                onRefresh: _loadPredios,
+                child: ListView.builder(
+                  itemCount: _predios.length,
+                  padding: const EdgeInsets.all(8),
+                  itemBuilder: (context, index) {
+                    final predio = _predios[index];
+                    return Card(
+                      margin: const EdgeInsets.symmetric(vertical: 4),
+                      child: ListTile(
+                        leading: CircleAvatar(
+                          backgroundColor: Colors.green.shade700,
+                          child: const Icon(
+                            Icons.location_on,
+                            color: Colors.white,
+                          ),
+                        ),
+                        title: Text(
+                          predio.claveCatastral ?? 'Sin clave catastral',
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (predio.superficieTotal != null)
+                              Text(
+                                'Superficie: ${predio.superficieTotal} hectáreas',
+                              ),
+                            if (predio.latitud != null &&
+                                predio.longitud != null)
+                              Text(
+                                'Lat: ${predio.latitud}, Long: ${predio.longitud}',
+                              ),
+                          ],
+                        ),
+                        trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                        onTap: () {
+                          // Navigate to predio detail if needed
+                        },
+                      ),
+                    );
+                  },
+                ),
+              ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
           _showRegisterPredioDialog();
@@ -127,12 +137,15 @@ class _PrediosScreenState extends State<PrediosScreen> {
   }
 
   Future<void> _showRegisterPredioDialog() async {
-    await showDialog(
+    await showModalBottomSheet(
       context: context,
-      builder: (context) => _RegisterPredioDialog(
-        predioService: _predioService,
-        onSuccess: _loadPredios,
-      ),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder:
+          (context) => _RegisterPredioDialog(
+            predioService: _predioService,
+            onSuccess: _loadPredios,
+          ),
     );
   }
 }
@@ -200,9 +213,9 @@ class _RegisterPredioDialogState extends State<_RegisterPredioDialog> {
 
       setState(() => _isLoadingLocation = false);
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al obtener ubicación: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error al obtener ubicación: $e')));
     }
   }
 
@@ -231,7 +244,9 @@ class _RegisterPredioDialogState extends State<_RegisterPredioDialog> {
 
     if (_documentFile == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Debes adjuntar un comprobante del predio')),
+        const SnackBar(
+          content: Text('Debes adjuntar un comprobante del predio'),
+        ),
       );
       return;
     }
@@ -243,7 +258,9 @@ class _RegisterPredioDialogState extends State<_RegisterPredioDialog> {
       final predio = Predio(
         id: '',
         claveCatastral: _claveCatastralController.text.trim(),
-        superficieTotal: double.tryParse(_superficieTotalController.text.trim()),
+        superficieTotal: double.tryParse(
+          _superficieTotalController.text.trim(),
+        ),
         latitud: _currentPosition!.latitude,
         longitud: _currentPosition!.longitude,
       );
@@ -285,7 +302,17 @@ class _RegisterPredioDialogState extends State<_RegisterPredioDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return Dialog(
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(20),
+          topRight: Radius.circular(20),
+        ),
+      ),
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
       child: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -295,9 +322,19 @@ class _RegisterPredioDialogState extends State<_RegisterPredioDialog> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text(
-                  'Registrar Predio',
-                  style: Theme.of(context).textTheme.headlineSmall,
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Registrar Predio',
+                        style: Theme.of(context).textTheme.headlineSmall,
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 24),
                 TextFormField(
@@ -319,22 +356,26 @@ class _RegisterPredioDialogState extends State<_RegisterPredioDialog> {
                 const SizedBox(height: 16),
                 ElevatedButton.icon(
                   onPressed: _isLoadingLocation ? null : _getCurrentLocation,
-                  icon: _isLoadingLocation
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : Icon(_currentPosition == null
-                          ? Icons.location_searching
-                          : Icons.check_circle),
-                  label: Text(_currentPosition == null
-                      ? 'Obtener Ubicación'
-                      : 'Ubicación Obtenida'),
+                  icon:
+                      _isLoadingLocation
+                          ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                          : Icon(
+                            _currentPosition == null
+                                ? Icons.location_searching
+                                : Icons.check_circle,
+                          ),
+                  label: Text(
+                    _currentPosition == null
+                        ? 'Obtener Ubicación'
+                        : 'Ubicación Obtenida',
+                  ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: _currentPosition == null
-                        ? Colors.blue
-                        : Colors.green,
+                    backgroundColor:
+                        _currentPosition == null ? Colors.blue : Colors.green,
                     foregroundColor: Colors.white,
                   ),
                 ),
@@ -350,12 +391,16 @@ class _RegisterPredioDialogState extends State<_RegisterPredioDialog> {
                 const SizedBox(height: 16),
                 OutlinedButton.icon(
                   onPressed: _pickDocument,
-                  icon: Icon(_documentFile == null
-                      ? Icons.camera_alt
-                      : Icons.check_circle),
-                  label: Text(_documentFile == null
-                      ? 'Adjuntar Comprobante'
-                      : 'Comprobante adjunto'),
+                  icon: Icon(
+                    _documentFile == null
+                        ? Icons.camera_alt
+                        : Icons.check_circle,
+                  ),
+                  label: Text(
+                    _documentFile == null
+                        ? 'Adjuntar Comprobante'
+                        : 'Comprobante adjunto',
+                  ),
                   style: OutlinedButton.styleFrom(
                     foregroundColor:
                         _documentFile == null ? Colors.blue : Colors.green,
@@ -376,16 +421,17 @@ class _RegisterPredioDialogState extends State<_RegisterPredioDialog> {
                         backgroundColor: Colors.green.shade700,
                         foregroundColor: Colors.white,
                       ),
-                      child: _isLoading
-                          ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                          : const Text('Registrar'),
+                      child:
+                          _isLoading
+                              ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                              : const Text('Registrar'),
                     ),
                   ],
                 ),
