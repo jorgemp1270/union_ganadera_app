@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:union_ganadera_app/utils/modern_app_bar.dart';
 
 class ApiSettingsScreen extends StatefulWidget {
   const ApiSettingsScreen({super.key});
@@ -102,10 +103,9 @@ class _ApiSettingsScreenState extends State<ApiSettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Configuración de API'),
-        backgroundColor: Colors.green.shade700,
-        foregroundColor: Colors.white,
+      appBar: const ModernAppBar(
+        title: 'Configuración de API',
+        backgroundColor: Colors.green,
       ),
       body:
           _isLoading

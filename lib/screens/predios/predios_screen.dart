@@ -8,6 +8,7 @@ import 'package:union_ganadera_app/models/predio.dart';
 import 'package:union_ganadera_app/services/api_client.dart';
 import 'package:union_ganadera_app/services/file_service.dart';
 import 'package:union_ganadera_app/services/predio_service.dart';
+import 'package:union_ganadera_app/utils/modern_app_bar.dart';
 
 class PrediosScreen extends StatefulWidget {
   const PrediosScreen({super.key});
@@ -52,10 +53,9 @@ class _PrediosScreenState extends State<PrediosScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Mis Predios'),
-        backgroundColor: Colors.green.shade700,
-        foregroundColor: Colors.white,
+      appBar: const ModernAppBar(
+        title: 'Mis Predios',
+        backgroundColor: Colors.green,
       ),
       body:
           _isLoading

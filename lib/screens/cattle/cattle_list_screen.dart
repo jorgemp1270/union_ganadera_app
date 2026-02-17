@@ -5,6 +5,7 @@ import 'package:union_ganadera_app/screens/cattle/register_cattle_screen.dart';
 import 'package:union_ganadera_app/screens/events/register_event_screen.dart';
 import 'package:union_ganadera_app/services/api_client.dart';
 import 'package:union_ganadera_app/services/bovino_service.dart';
+import 'package:union_ganadera_app/utils/modern_app_bar.dart';
 
 class CattleListScreen extends StatefulWidget {
   const CattleListScreen({super.key});
@@ -70,18 +71,16 @@ class _CattleListScreenState extends State<CattleListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          _isSelectionMode
-              ? '${_selectedBovinoIds.length} seleccionados'
-              : 'Mi Ganado',
-        ),
+      appBar: ModernAppBar(
+        title:
+            _isSelectionMode
+                ? '${_selectedBovinoIds.length} seleccionados'
+                : 'Mi Ganado',
         backgroundColor: Colors.green.shade700,
-        foregroundColor: Colors.white,
         leading:
             _isSelectionMode
                 ? IconButton(
-                  icon: const Icon(Icons.close),
+                  icon: const Icon(Icons.close, color: Colors.white),
                   onPressed: () {
                     setState(() {
                       _isSelectionMode = false;

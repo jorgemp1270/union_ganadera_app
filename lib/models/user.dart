@@ -67,3 +67,44 @@ class UserRegistration {
     };
   }
 }
+
+class VeterinarianRegistration {
+  final String curp;
+  final String contrasena;
+  final String nombre;
+  final String apellidoP;
+  final String apellidoM;
+  final String sexo;
+  final DateTime fechaNac;
+  final String claveElector;
+  final String idmex;
+  final String cedula;
+
+  VeterinarianRegistration({
+    required this.curp,
+    required this.contrasena,
+    required this.nombre,
+    required this.apellidoP,
+    required this.apellidoM,
+    required this.sexo,
+    required this.fechaNac,
+    required this.claveElector,
+    required this.idmex,
+    required this.cedula,
+  });
+
+  Map<String, dynamic> toFormData() {
+    return {
+      'curp': curp,
+      'contrasena': contrasena,
+      'nombre': nombre,
+      'apellido_p': apellidoP,
+      'apellido_m': apellidoM,
+      'sexo': sexo,
+      'fecha_nac': fechaNac.toIso8601String().split('T')[0],
+      'clave_elector': claveElector,
+      'idmex': idmex,
+      'cedula': cedula,
+    };
+  }
+}

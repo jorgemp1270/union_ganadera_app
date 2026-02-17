@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:union_ganadera_app/models/bovino.dart';
-import 'package:union_ganadera_app/models/evento.dart';
+import 'package:union_ganadera_app/models/user.dart';
 import 'package:union_ganadera_app/services/api_client.dart';
 import 'package:union_ganadera_app/services/auth_service.dart';
 import 'package:union_ganadera_app/services/evento_service.dart';
+import 'package:union_ganadera_app/utils/modern_app_bar.dart';
 
 class RegisterEventScreen extends StatefulWidget {
   final List<Bovino> bovinos;
@@ -21,11 +21,10 @@ class _RegisterEventScreenState extends State<RegisterEventScreen> {
   final ApiClient _apiClient = ApiClient();
   late final EventoService _eventoService;
   late final AuthService _authService;
-  final _storage = const FlutterSecureStorage();
 
   String _eventType = 'peso';
   bool _isLoading = false;
-  String? _currentUserCurp;
+  User? _currentUser;
 
   // Peso fields
   final _pesoController = TextEditingController();
@@ -68,23 +67,17 @@ class _RegisterEventScreenState extends State<RegisterEventScreen> {
 
   Future<void> _loadCurrentUser() async {
     try {
-      final savedCurp = await _storage.read(key: 'saved_curp');
-      if (savedCurp != null) {
-        setState(() {
-          _currentUserCurp = savedCurp;
-          _vendedorCurpController.text = savedCurp;
-        });
-      } else {
-        final user = await _authService.getCurrentUser();
-        setState(() {
-          _currentUserCurp = user.curp;
-          _vendedorCurpController.text = user.curp;
-        });
-      }
+      final user = await _authService.getCurrentUser();
+      setState(() {
+        _currentUser = user;
+        _vendedorCurpController.text = user.curp;
+      });
     } catch (e) {
       // Ignore error, user can input manually
     }
   }
+
+  bool get _isVeterinarian => _currentUser?.rol == 'veterinario';
 
   @override
   void dispose() {
@@ -222,14 +215,12 @@ class _RegisterEventScreenState extends State<RegisterEventScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          widget.bovinos.length == 1
-              ? 'Registrar Evento'
-              : 'Evento para ${widget.bovinos.length} bovinos',
-        ),
+      appBar: ModernAppBar(
+        title:
+            widget.bovinos.length == 1
+                ? 'Registrar Evento'
+                : 'Evento para ${widget.bovinos.length} bovinos',
         backgroundColor: Colors.green.shade700,
-        foregroundColor: Colors.white,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
@@ -258,28 +249,31 @@ class _RegisterEventScreenState extends State<RegisterEventScreen> {
                   labelText: 'Tipo de Evento',
                   border: OutlineInputBorder(),
                 ),
-                items: const [
-                  DropdownMenuItem(
+                items: [
+                  const DropdownMenuItem(
                     value: 'peso',
                     child: Text('Registro de Peso'),
                   ),
-                  DropdownMenuItem(
+                  const DropdownMenuItem(
                     value: 'dieta',
                     child: Text('Cambio de Dieta'),
                   ),
-                  DropdownMenuItem(
-                    value: 'vacunacion',
-                    child: Text('Vacunaci\u00f3n'),
-                  ),
-                  DropdownMenuItem(
-                    value: 'desparasitacion',
-                    child: Text('Desparasitaci\u00f3n'),
-                  ),
-                  DropdownMenuItem(
-                    value: 'laboratorio',
-                    child: Text('An\u00e1lisis de Laboratorio'),
-                  ),
-                  DropdownMenuItem(
+                  // Veterinary events - only show to veterinarians
+                  if (_isVeterinarian) ...[
+                    const DropdownMenuItem(
+                      value: 'vacunacion',
+                      child: Text('Vacunaci\u00f3n'),
+                    ),
+                    const DropdownMenuItem(
+                      value: 'desparasitacion',
+                      child: Text('Desparasitaci\u00f3n'),
+                    ),
+                    const DropdownMenuItem(
+                      value: 'laboratorio',
+                      child: Text('An\u00e1lisis de Laboratorio'),
+                    ),
+                  ],
+                  const DropdownMenuItem(
                     value: 'compraventa',
                     child: Text('Compra/Venta'),
                   ),
@@ -510,6 +504,8 @@ class _RegisterEventScreenState extends State<RegisterEventScreen> {
                     labelText: 'CURP del Vendedor',
                     border: OutlineInputBorder(),
                     helperText: 'Se usa tu CURP guardado por defecto',
+                    enabled:
+                        false, // Vendedor es siempre el usuario actual, no se puede cambiar
                   ),
                   textCapitalization: TextCapitalization.characters,
                   inputFormatters: [

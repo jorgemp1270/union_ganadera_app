@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:union_ganadera_app/models/user.dart';
 import 'package:union_ganadera_app/services/api_client.dart';
@@ -36,6 +37,40 @@ class AuthService {
     } on DioException catch (e) {
       if (e.response?.statusCode == 422) {
         throw Exception('Datos de registro inválidos');
+      }
+      throw Exception('Error al registrar: ${e.message}');
+    }
+  }
+
+  Future<User> signupVeterinarian(
+    VeterinarianRegistration registration,
+    File cedulaFile,
+  ) async {
+    try {
+      final formData = FormData.fromMap({
+        ...registration.toFormData(),
+        'cedula_file': await MultipartFile.fromFile(
+          cedulaFile.path,
+          filename: cedulaFile.path.split('/').last,
+        ),
+      });
+
+      final response = await apiClient.dio.post(
+        '/signup/veterinario',
+        data: formData,
+        options: Options(headers: {'Content-Type': 'multipart/form-data'}),
+      );
+
+      return User.fromJson(response.data);
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 400) {
+        throw Exception('Datos de registro inválidos o usuario ya existe');
+      }
+      if (e.response?.statusCode == 422) {
+        throw Exception('Datos de registro inválidos');
+      }
+      if (e.response?.statusCode == 500) {
+        throw Exception('Error al subir archivo de cédula');
       }
       throw Exception('Error al registrar: ${e.message}');
     }

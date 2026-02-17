@@ -91,4 +91,45 @@ class BovinoService {
       throw Exception('Error al subir foto de nariz: ${e.message}');
     }
   }
+
+  /// Search for cattle by barcode, RFID, or nose photo key (veterinarians only)
+  Future<Bovino> searchBovino({
+    String? areteBarcode,
+    String? areteRfid,
+    String? narizStorageKey,
+  }) async {
+    try {
+      if (areteBarcode == null &&
+          areteRfid == null &&
+          narizStorageKey == null) {
+        throw Exception('Debe proporcionar al menos un parámetro de búsqueda');
+      }
+
+      final queryParams = <String, String>{};
+      if (areteBarcode != null) queryParams['arete_barcode'] = areteBarcode;
+      if (areteRfid != null) queryParams['arete_rfid'] = areteRfid;
+      if (narizStorageKey != null) {
+        queryParams['nariz_storage_key'] = narizStorageKey;
+      }
+
+      final response = await apiClient.dio.get(
+        '/bovinos/search',
+        queryParameters: queryParams,
+      );
+      return Bovino.fromJson(response.data);
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 400) {
+        throw Exception('No se proporcionó ningún parámetro de búsqueda');
+      }
+      if (e.response?.statusCode == 403) {
+        throw Exception('Solo veterinarios pueden buscar ganado');
+      }
+      if (e.response?.statusCode == 404) {
+        throw Exception(
+          'No se encontró el bovino con los datos proporcionados',
+        );
+      }
+      throw Exception('Error al buscar bovino: ${e.message}');
+    }
+  }
 }

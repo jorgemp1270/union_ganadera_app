@@ -9,6 +9,7 @@ import 'package:union_ganadera_app/services/api_client.dart';
 import 'package:union_ganadera_app/services/auth_service.dart';
 import 'package:union_ganadera_app/services/file_service.dart';
 import 'package:union_ganadera_app/utils/curp_validator.dart';
+import 'package:union_ganadera_app/utils/modern_app_bar.dart';
 
 class SignupScreen extends StatefulWidget {
   final bool embedded;
@@ -29,11 +30,14 @@ class _SignupScreenState extends State<SignupScreen> {
   final _idmexController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  final _cedulaController = TextEditingController();
 
   DateTime? _fechaNacimiento;
   String _sexo = 'M';
+  String _userType = 'ganadero'; // 'ganadero' or 'veterinario'
   File? _inePhoto;
   File? _comprobanteDomicilioPhoto;
+  File? _cedulaFile;
   bool _isLoading = false;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
@@ -60,10 +64,11 @@ class _SignupScreenState extends State<SignupScreen> {
     _idmexController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
+    _cedulaController.dispose();
     super.dispose();
   }
 
-  Future<void> _pickImage(bool isINE) async {
+  Future<void> _pickImage(String type) async {
     final XFile? image = await _picker.pickImage(
       source: ImageSource.camera,
       imageQuality: 85,
@@ -71,10 +76,12 @@ class _SignupScreenState extends State<SignupScreen> {
 
     if (image != null) {
       setState(() {
-        if (isINE) {
+        if (type == 'ine') {
           _inePhoto = File(image.path);
-        } else {
+        } else if (type == 'comprobante') {
           _comprobanteDomicilioPhoto = File(image.path);
+        } else if (type == 'cedula') {
+          _cedulaFile = File(image.path);
         }
       });
     }
@@ -149,23 +156,50 @@ class _SignupScreenState extends State<SignupScreen> {
       return;
     }
 
+    if (_userType == 'veterinario' && _cedulaFile == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Debes subir tu cédula profesional'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     setState(() => _isLoading = true);
 
     try {
-      // 1. Register user
-      final registration = UserRegistration(
-        curp: _curpController.text.trim(),
-        contrasena: _passwordController.text,
-        nombre: _nombreController.text.trim(),
-        apellidoP: _apellidoPController.text.trim(),
-        apellidoM: _apellidoMController.text.trim(),
-        sexo: _sexo,
-        fechaNac: _fechaNacimiento!,
-        claveElector: _claveElectorController.text.trim(),
-        idmex: _idmexController.text.trim(),
-      );
+      // 1. Register user based on type
+      if (_userType == 'veterinario') {
+        final vetRegistration = VeterinarianRegistration(
+          curp: _curpController.text.trim(),
+          contrasena: _passwordController.text,
+          nombre: _nombreController.text.trim(),
+          apellidoP: _apellidoPController.text.trim(),
+          apellidoM: _apellidoMController.text.trim(),
+          sexo: _sexo,
+          fechaNac: _fechaNacimiento!,
+          claveElector: _claveElectorController.text.trim(),
+          idmex: _idmexController.text.trim(),
+          cedula: _cedulaController.text.trim(),
+        );
 
-      await _authService.signup(registration);
+        await _authService.signupVeterinarian(vetRegistration, _cedulaFile!);
+      } else {
+        final registration = UserRegistration(
+          curp: _curpController.text.trim(),
+          contrasena: _passwordController.text,
+          nombre: _nombreController.text.trim(),
+          apellidoP: _apellidoPController.text.trim(),
+          apellidoM: _apellidoMController.text.trim(),
+          sexo: _sexo,
+          fechaNac: _fechaNacimiento!,
+          claveElector: _claveElectorController.text.trim(),
+          idmex: _idmexController.text.trim(),
+        );
+
+        await _authService.signup(registration);
+      }
 
       // 2. Login to get token
       await _authService.login(
@@ -173,7 +207,7 @@ class _SignupScreenState extends State<SignupScreen> {
         _passwordController.text,
       );
 
-      // 3. Upload documents
+      // 3. Upload INE and comprobante documents
       await _fileService.uploadFile(
         file: _inePhoto!,
         docType: DocType.identificacion,
@@ -187,8 +221,12 @@ class _SignupScreenState extends State<SignupScreen> {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Registro exitoso. Tus documentos serán revisados.'),
+        SnackBar(
+          content: Text(
+            _userType == 'veterinario'
+                ? 'Registro de veterinario exitoso. Tus documentos serán revisados.'
+                : 'Registro exitoso. Tus documentos serán revisados.',
+          ),
           backgroundColor: Colors.green,
         ),
       );
@@ -230,10 +268,9 @@ class _SignupScreenState extends State<SignupScreen> {
 
     // Standalone screen with AppBar
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Registro de Ganadero'),
-        backgroundColor: Colors.green.shade700,
-        foregroundColor: Colors.white,
+      appBar: const ModernAppBar(
+        title: 'Registro de Ganadero',
+        backgroundColor: Colors.green,
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -250,6 +287,76 @@ class _SignupScreenState extends State<SignupScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // User Type Selection
+          const Text(
+            'Tipo de Usuario',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: FilledButton.icon(
+                  onPressed: () => setState(() => _userType = 'ganadero'),
+                  icon: Icon(
+                    Icons.agriculture,
+                    color:
+                        _userType == 'ganadero' ? Colors.white : Colors.green,
+                  ),
+                  label: Text(
+                    'Ganadero',
+                    style: TextStyle(
+                      color:
+                          _userType == 'ganadero' ? Colors.white : Colors.green,
+                    ),
+                  ),
+                  style: FilledButton.styleFrom(
+                    backgroundColor:
+                        _userType == 'ganadero'
+                            ? Colors.green.shade700
+                            : Colors.green.shade50,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      side: BorderSide(color: Colors.green.shade700, width: 2),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: FilledButton.icon(
+                  onPressed: () => setState(() => _userType = 'veterinario'),
+                  icon: Icon(
+                    Icons.medical_services,
+                    color:
+                        _userType == 'veterinario' ? Colors.white : Colors.blue,
+                  ),
+                  label: Text(
+                    'Veterinario',
+                    style: TextStyle(
+                      color:
+                          _userType == 'veterinario'
+                              ? Colors.white
+                              : Colors.blue,
+                    ),
+                  ),
+                  style: FilledButton.styleFrom(
+                    backgroundColor:
+                        _userType == 'veterinario'
+                            ? Colors.blue.shade700
+                            : Colors.blue.shade50,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      side: BorderSide(color: Colors.blue.shade700, width: 2),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -444,6 +551,65 @@ class _SignupScreenState extends State<SignupScreen> {
               return null;
             },
           ),
+          // Veterinarian-specific fields
+          if (_userType == 'veterinario') ...[
+            const SizedBox(height: 24),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.blue.shade50,
+                border: Border.all(color: Colors.blue.shade300),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.medical_services, color: Colors.blue.shade700),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Información de Veterinario',
+                      style: TextStyle(
+                        color: Colors.blue.shade900,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _cedulaController,
+              decoration: const InputDecoration(
+                labelText: 'Número de Cédula Profesional',
+                border: OutlineInputBorder(),
+                helperText: 'Ej: 12345678',
+              ),
+              keyboardType: TextInputType.number,
+              validator: (value) {
+                if (_userType == 'veterinario' && (value?.isEmpty ?? true)) {
+                  return 'La cédula profesional es requerida';
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 16),
+            OutlinedButton.icon(
+              onPressed: () => _pickImage('cedula'),
+              icon: Icon(_cedulaFile == null ? Icons.upload_file : Icons.check),
+              label: Text(
+                _cedulaFile == null
+                    ? 'Subir Cédula Profesional'
+                    : 'Cédula subida: ${_cedulaFile!.path.split('/').last}',
+              ),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.all(16),
+                foregroundColor:
+                    _cedulaFile == null ? Colors.blue : Colors.green,
+              ),
+            ),
+          ],
           const SizedBox(height: 24),
           const Text(
             'Documentos Requeridos',
@@ -451,7 +617,7 @@ class _SignupScreenState extends State<SignupScreen> {
           ),
           const SizedBox(height: 16),
           OutlinedButton.icon(
-            onPressed: () => _pickImage(true),
+            onPressed: () => _pickImage('ine'),
             icon: Icon(_inePhoto == null ? Icons.camera_alt : Icons.check),
             label: Text(
               _inePhoto == null ? 'Tomar foto de INE' : 'Foto de INE capturada',
@@ -463,7 +629,7 @@ class _SignupScreenState extends State<SignupScreen> {
           ),
           const SizedBox(height: 12),
           OutlinedButton.icon(
-            onPressed: () => _pickImage(false),
+            onPressed: () => _pickImage('comprobante'),
             icon: Icon(
               _comprobanteDomicilioPhoto == null
                   ? Icons.camera_alt

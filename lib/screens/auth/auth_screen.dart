@@ -6,6 +6,7 @@ import 'package:union_ganadera_app/screens/settings/api_settings_screen.dart';
 import 'package:union_ganadera_app/services/api_client.dart';
 import 'package:union_ganadera_app/services/auth_service.dart';
 import 'package:union_ganadera_app/screens/auth/signup_screen.dart';
+import 'package:union_ganadera_app/utils/modern_app_bar.dart';
 
 class AuthScreen extends StatefulWidget {
   final int initialTab;
@@ -39,13 +40,12 @@ class _AuthScreenState extends State<AuthScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Unión Ganadera'),
+      appBar: ModernAppBar(
+        title: 'Unión Ganadera',
         backgroundColor: Colors.green.shade700,
-        foregroundColor: Colors.white,
         actions: [
           IconButton(
-            icon: const Icon(Icons.settings),
+            icon: const Icon(Icons.settings, color: Colors.white),
             tooltip: 'Configuración de API',
             onPressed: () {
               Navigator.push(

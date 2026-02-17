@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:union_ganadera_app/models/bovino.dart';
 import 'package:union_ganadera_app/services/api_client.dart';
 import 'package:union_ganadera_app/services/bovino_service.dart';
+import 'package:union_ganadera_app/utils/modern_app_bar.dart';
 
 class EditCattleScreen extends StatefulWidget {
   final Bovino bovino;
@@ -310,10 +311,9 @@ class _EditCattleScreenState extends State<EditCattleScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Editar Ganado'),
-        backgroundColor: Colors.green.shade700,
-        foregroundColor: Colors.white,
+      appBar: const ModernAppBar(
+        title: 'Editar Ganado',
+        backgroundColor: Colors.green,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),

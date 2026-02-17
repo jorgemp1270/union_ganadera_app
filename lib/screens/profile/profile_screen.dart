@@ -8,6 +8,7 @@ import 'package:union_ganadera_app/screens/settings/api_settings_screen.dart';
 import 'package:union_ganadera_app/services/api_client.dart';
 import 'package:union_ganadera_app/services/auth_service.dart';
 import 'package:union_ganadera_app/services/file_service.dart';
+import 'package:union_ganadera_app/utils/modern_app_bar.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -226,10 +227,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Mi Perfil'),
-        backgroundColor: Colors.green.shade700,
-        foregroundColor: Colors.white,
+      appBar: const ModernAppBar(
+        title: 'Mi Perfil',
+        backgroundColor: Colors.green,
       ),
       body:
           _isLoading

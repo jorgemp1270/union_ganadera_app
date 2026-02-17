@@ -6,6 +6,7 @@ import 'package:union_ganadera_app/screens/cattle/edit_cattle_screen.dart';
 import 'package:union_ganadera_app/services/api_client.dart';
 import 'package:union_ganadera_app/services/evento_service.dart';
 import 'package:intl/intl.dart';
+import 'package:union_ganadera_app/utils/modern_app_bar.dart';
 
 class CattleDetailScreen extends StatefulWidget {
   final Bovino bovino;
@@ -69,10 +70,9 @@ class _CattleDetailScreenState extends State<CattleDetailScreen> {
     final dateFormat = DateFormat('dd/MM/yyyy');
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.bovino.areteBarcode ?? 'Detalle del Ganado'),
+      appBar: ModernAppBar(
+        title: widget.bovino.areteBarcode ?? 'Detalle del Ganado',
         backgroundColor: Colors.green.shade700,
-        foregroundColor: Colors.white,
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
