@@ -102,58 +102,55 @@ class _ApiSettingsScreenState extends State<ApiSettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Scaffold(
-      appBar: const ModernAppBar(
-        title: 'Configuración de API',
-        backgroundColor: Colors.green,
-      ),
+      appBar: const ModernAppBar(title: 'Configuración de API'),
       body:
           _isLoading
               ? const Center(child: CircularProgressIndicator())
               : SingleChildScrollView(
-                padding: const EdgeInsets.all(24),
+                padding: const EdgeInsets.all(20),
                 child: Form(
                   key: _formKey,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.orange.shade50,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.orange.shade300),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.warning_amber,
-                              color: Colors.orange.shade700,
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                'Solo para pruebas. Cambia la IP y puerto del servidor API.',
-                                style: TextStyle(
-                                  color: Colors.orange.shade900,
-                                  fontWeight: FontWeight.bold,
+                      // Warning card
+                      Card(
+                        color: cs.tertiaryContainer,
+                        child: Padding(
+                          padding: const EdgeInsets.all(14),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.warning_amber_rounded,
+                                color: cs.onTertiaryContainer,
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  'Solo para pruebas. Cambia la IP y puerto del servidor API.',
+                                  style: TextStyle(
+                                    color: cs.onTertiaryContainer,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 32),
+                      const SizedBox(height: 24),
                       TextFormField(
                         controller: _ipController,
                         decoration: const InputDecoration(
                           labelText: 'Dirección IP',
                           hintText: '10.0.2.2 o localhost',
-                          border: OutlineInputBorder(),
-                          prefixIcon: Icon(Icons.computer),
+                          prefixIcon: Icon(Icons.computer_rounded),
                           helperText:
-                              'Para emulador Android: 10.0.2.2\nPara iOS: localhost o IP de tu PC',
+                              'Android emulador: 10.0.2.2  ·  iOS: localhost o IP de PC',
                         ),
+                        onChanged: (_) => setState(() {}),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
                             return 'La IP es requerida';
@@ -161,16 +158,16 @@ class _ApiSettingsScreenState extends State<ApiSettingsScreen> {
                           return null;
                         },
                       ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 16),
                       TextFormField(
                         controller: _portController,
                         decoration: const InputDecoration(
                           labelText: 'Puerto',
                           hintText: '8000',
-                          border: OutlineInputBorder(),
-                          prefixIcon: Icon(Icons.settings_ethernet),
+                          prefixIcon: Icon(Icons.settings_ethernet_rounded),
                         ),
                         keyboardType: TextInputType.number,
+                        onChanged: (_) => setState(() {}),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
                             return 'El puerto es requerido';
@@ -183,58 +180,61 @@ class _ApiSettingsScreenState extends State<ApiSettingsScreen> {
                         },
                       ),
                       const SizedBox(height: 16),
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.blue.shade50,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.blue.shade200),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'URL resultante:',
-                              style: TextStyle(
-                                color: Colors.blue.shade900,
-                                fontWeight: FontWeight.bold,
+                      // Live URL preview
+                      Card(
+                        color: cs.secondaryContainer,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'URL resultante',
+                                style: TextStyle(
+                                  color: cs.onSecondaryContainer,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 12,
+                                  letterSpacing: 0.5,
+                                ),
                               ),
-                            ),
-                            const SizedBox(height: 8),
-                            SelectableText(
-                              'http://${_ipController.text}:${_portController.text}',
-                              style: TextStyle(
-                                color: Colors.blue.shade700,
-                                fontFamily: 'monospace',
-                                fontSize: 16,
+                              const SizedBox(height: 4),
+                              SelectableText(
+                                'http://${_ipController.text}:${_portController.text}',
+                                style: TextStyle(
+                                  color: cs.onSecondaryContainer,
+                                  fontFamily: 'monospace',
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 32),
-                      ElevatedButton.icon(
+                      const SizedBox(height: 28),
+                      FilledButton.icon(
                         onPressed: _saveSettings,
-                        icon: const Icon(Icons.save),
+                        icon: const Icon(Icons.save_outlined),
                         label: const Text('Guardar Configuración'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green.shade700,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
+                        style: FilledButton.styleFrom(
+                          minimumSize: const Size.fromHeight(48),
                         ),
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 12),
                       OutlinedButton.icon(
                         onPressed: _resetToDefault,
-                        icon: const Icon(Icons.refresh),
+                        icon: const Icon(Icons.refresh_rounded),
                         label: const Text('Restablecer Predeterminados'),
                         style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          minimumSize: const Size.fromHeight(48),
                         ),
                       ),
-                      const SizedBox(height: 32),
+                      const SizedBox(height: 24),
+                      // Info card
                       Card(
-                        color: Colors.grey.shade100,
                         child: Padding(
                           padding: const EdgeInsets.all(16),
                           child: Column(
@@ -243,15 +243,16 @@ class _ApiSettingsScreenState extends State<ApiSettingsScreen> {
                               Row(
                                 children: [
                                   Icon(
-                                    Icons.info_outline,
-                                    color: Colors.grey.shade700,
+                                    Icons.info_outline_rounded,
+                                    color: cs.onSurfaceVariant,
+                                    size: 20,
                                   ),
                                   const SizedBox(width: 8),
                                   Text(
-                                    'Información',
+                                    'Guía de conexión',
                                     style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.grey.shade900,
+                                      fontWeight: FontWeight.w700,
+                                      color: cs.onSurface,
                                     ),
                                   ),
                                 ],
@@ -260,17 +261,19 @@ class _ApiSettingsScreenState extends State<ApiSettingsScreen> {
                               Text(
                                 '• Emulador Android: usa 10.0.2.2\n'
                                 '• Simulador iOS: usa localhost\n'
-                                '• Dispositivo físico: usa la IP de tu PC en la red local\n'
-                                '• Después de guardar, cierra y reinicia la app completamente',
+                                '• Dispositivo físico: IP de tu PC en la red local\n'
+                                '• Después de guardar, reinicia la app completamente',
                                 style: TextStyle(
-                                  color: Colors.grey.shade700,
-                                  height: 1.5,
+                                  color: cs.onSurfaceVariant,
+                                  height: 1.6,
+                                  fontSize: 13,
                                 ),
                               ),
                             ],
                           ),
                         ),
                       ),
+                      const SizedBox(height: 32),
                     ],
                   ),
                 ),

@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+/// A Material 3 branded AppBar used throughout the app.
+/// When [backgroundColor] is provided it overrides the theme's primary color,
+/// which keeps per-screen accent tints (e.g. blue for vet screens).
 class ModernAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
   final Color? backgroundColor;
@@ -17,36 +20,37 @@ class ModernAppBar extends StatelessWidget implements PreferredSizeWidget {
   });
 
   @override
-  Size get preferredSize => Size.fromHeight(
-    kToolbarHeight + 16 + (bottom?.preferredSize.height ?? 0),
-  );
+  Size get preferredSize =>
+      Size.fromHeight(kToolbarHeight + (bottom?.preferredSize.height ?? 0));
 
   @override
   Widget build(BuildContext context) {
-    final bgColor = backgroundColor ?? Colors.green.shade700;
+    final cs = Theme.of(context).colorScheme;
+    final bgColor = backgroundColor ?? cs.primary;
+
+    // Derive a legible foreground from the given background
+    final fgColor =
+        ThemeData.estimateBrightnessForColor(bgColor) == Brightness.dark
+            ? Colors.white
+            : cs.onSurface;
 
     return AppBar(
       backgroundColor: bgColor,
+      foregroundColor: fgColor,
       elevation: 0,
+      scrolledUnderElevation: 2,
+      shadowColor: Colors.black26,
+      centerTitle: true,
       leading: leading,
       actions: actions,
-      centerTitle: true,
       bottom: bottom,
-      title: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-        decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.15),
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Text(
-          title,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
+      titleTextStyle: TextStyle(
+        color: fgColor,
+        fontSize: 19,
+        fontWeight: FontWeight.w700,
+        letterSpacing: 0.2,
       ),
+      title: Text(title),
     );
   }
 }

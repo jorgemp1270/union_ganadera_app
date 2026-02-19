@@ -192,25 +192,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _handleLogout() async {
     final confirm = await showDialog<bool>(
       context: context,
-      builder:
-          (context) => AlertDialog(
-            title: const Text('Cerrar Sesión'),
-            content: const Text('¿Estás seguro que deseas cerrar sesión?'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(false),
-                child: const Text('Cancelar'),
+      builder: (context) {
+        final cs = Theme.of(context).colorScheme;
+        return AlertDialog(
+          title: const Text('Cerrar Sesión'),
+          content: const Text('¿Estás seguro que deseas cerrar sesión?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancelar'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              style: FilledButton.styleFrom(
+                backgroundColor: cs.error,
+                foregroundColor: cs.onError,
               ),
-              ElevatedButton(
-                onPressed: () => Navigator.of(context).pop(true),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red,
-                  foregroundColor: Colors.white,
-                ),
-                child: const Text('Cerrar Sesión'),
-              ),
-            ],
-          ),
+              child: const Text('Cerrar Sesión'),
+            ),
+          ],
+        );
+      },
     );
 
     if (confirm == true) {
@@ -226,11 +228,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Scaffold(
-      appBar: const ModernAppBar(
-        title: 'Mi Perfil',
-        backgroundColor: Colors.green,
-      ),
+      appBar: const ModernAppBar(title: 'Mi Perfil'),
       body:
           _isLoading
               ? const Center(child: CircularProgressIndicator())
@@ -242,43 +242,54 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      // ── Profile Header Card ─────────────────────────────
                       Card(
+                        color: cs.primaryContainer,
                         child: Padding(
-                          padding: const EdgeInsets.all(16),
+                          padding: const EdgeInsets.all(24),
                           child: Column(
                             children: [
                               CircleAvatar(
-                                radius: 50,
-                                backgroundColor: Colors.green.shade700,
-                                child: const Icon(
-                                  Icons.person,
-                                  size: 50,
-                                  color: Colors.white,
+                                radius: 44,
+                                backgroundColor: cs.primary,
+                                child: Icon(
+                                  Icons.person_rounded,
+                                  size: 44,
+                                  color: cs.onPrimary,
                                 ),
                               ),
-                              const SizedBox(height: 16),
+                              const SizedBox(height: 12),
                               Text(
                                 _currentUser?.curp ?? '',
-                                style: const TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w700,
+                                  color: cs.onPrimaryContainer,
                                 ),
                               ),
                               const SizedBox(height: 8),
                               Chip(
                                 label: Text(_currentUser?.rol ?? 'usuario'),
-                                backgroundColor: Colors.green.shade100,
+                                backgroundColor: cs.primary.withOpacity(0.2),
+                                labelStyle: TextStyle(
+                                  color: cs.onPrimaryContainer,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ],
                           ),
                         ),
                       ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 20),
+
+                      // ── Document Upload ─────────────────────────────────
                       Text(
                         'Subir Documentos',
-                        style: Theme.of(context).textTheme.titleLarge,
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 12),
                       Card(
                         child: Padding(
                           padding: const EdgeInsets.all(16),
@@ -287,319 +298,167 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             children: [
                               Text(
                                 'Documentos Requeridos',
-                                style: Theme.of(context).textTheme.titleMedium,
+                                style: Theme.of(context).textTheme.titleMedium
+                                    ?.copyWith(fontWeight: FontWeight.w600),
                               ),
                               const SizedBox(height: 16),
                               // INE Front
-                              InkWell(
+                              _DocUploadTile(
+                                label: 'INE — Frente',
+                                image: _ineFrontImage,
+                                disabled: _isUploading,
                                 onTap:
-                                    _isUploading
-                                        ? null
-                                        : () => _showImageSourceDialog((image) {
-                                          setState(
-                                            () => _ineFrontImage = image,
-                                          );
-                                        }),
-                                child: Container(
-                                  height: 120,
-                                  decoration: BoxDecoration(
-                                    border: Border.all(
-                                      color: Colors.grey.shade300,
-                                      width: 2,
+                                    () => _showImageSourceDialog(
+                                      (img) =>
+                                          setState(() => _ineFrontImage = img),
                                     ),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child:
-                                      _ineFrontImage != null
-                                          ? Stack(
-                                            children: [
-                                              ClipRRect(
-                                                borderRadius:
-                                                    BorderRadius.circular(6),
-                                                child: Image.file(
-                                                  _ineFrontImage!,
-                                                  width: double.infinity,
-                                                  height: double.infinity,
-                                                  fit: BoxFit.cover,
-                                                ),
-                                              ),
-                                              Positioned(
-                                                top: 4,
-                                                right: 4,
-                                                child: IconButton(
-                                                  icon: const Icon(
-                                                    Icons.close,
-                                                    color: Colors.white,
-                                                  ),
-                                                  style: IconButton.styleFrom(
-                                                    backgroundColor: Colors.red,
-                                                  ),
-                                                  onPressed:
-                                                      () => setState(
-                                                        () =>
-                                                            _ineFrontImage =
-                                                                null,
-                                                      ),
-                                                ),
-                                              ),
-                                            ],
-                                          )
-                                          : Column(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.center,
-                                            children: [
-                                              Icon(
-                                                Icons.add_a_photo,
-                                                size: 40,
-                                                color: Colors.grey.shade600,
-                                              ),
-                                              const SizedBox(height: 8),
-                                              Text(
-                                                'INE - Frente',
-                                                style: TextStyle(
-                                                  color: Colors.grey.shade600,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                ),
+                                onRemove:
+                                    () => setState(() => _ineFrontImage = null),
                               ),
-                              const SizedBox(height: 12),
+                              const SizedBox(height: 10),
                               // INE Back
-                              InkWell(
+                              _DocUploadTile(
+                                label: 'INE — Reverso',
+                                image: _ineBackImage,
+                                disabled: _isUploading,
                                 onTap:
-                                    _isUploading
-                                        ? null
-                                        : () => _showImageSourceDialog((image) {
-                                          setState(() => _ineBackImage = image);
-                                        }),
-                                child: Container(
-                                  height: 120,
-                                  decoration: BoxDecoration(
-                                    border: Border.all(
-                                      color: Colors.grey.shade300,
-                                      width: 2,
+                                    () => _showImageSourceDialog(
+                                      (img) =>
+                                          setState(() => _ineBackImage = img),
                                     ),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child:
-                                      _ineBackImage != null
-                                          ? Stack(
-                                            children: [
-                                              ClipRRect(
-                                                borderRadius:
-                                                    BorderRadius.circular(6),
-                                                child: Image.file(
-                                                  _ineBackImage!,
-                                                  width: double.infinity,
-                                                  height: double.infinity,
-                                                  fit: BoxFit.cover,
-                                                ),
-                                              ),
-                                              Positioned(
-                                                top: 4,
-                                                right: 4,
-                                                child: IconButton(
-                                                  icon: const Icon(
-                                                    Icons.close,
-                                                    color: Colors.white,
-                                                  ),
-                                                  style: IconButton.styleFrom(
-                                                    backgroundColor: Colors.red,
-                                                  ),
-                                                  onPressed:
-                                                      () => setState(
-                                                        () =>
-                                                            _ineBackImage =
-                                                                null,
-                                                      ),
-                                                ),
-                                              ),
-                                            ],
-                                          )
-                                          : Column(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.center,
-                                            children: [
-                                              Icon(
-                                                Icons.add_a_photo,
-                                                size: 40,
-                                                color: Colors.grey.shade600,
-                                              ),
-                                              const SizedBox(height: 8),
-                                              Text(
-                                                'INE - Reverso',
-                                                style: TextStyle(
-                                                  color: Colors.grey.shade600,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                ),
+                                onRemove:
+                                    () => setState(() => _ineBackImage = null),
                               ),
-                              const SizedBox(height: 12),
-                              // Comprobante de Domicilio
-                              InkWell(
+                              const SizedBox(height: 10),
+                              // Comprobante domicilio
+                              _DocUploadTile(
+                                label: 'Comprobante de Domicilio',
+                                image: _comprobanteDomicilioImage,
+                                disabled: _isUploading,
                                 onTap:
-                                    _isUploading
-                                        ? null
-                                        : () => _showImageSourceDialog((image) {
-                                          setState(
-                                            () =>
-                                                _comprobanteDomicilioImage =
-                                                    image,
-                                          );
-                                        }),
-                                child: Container(
-                                  height: 120,
-                                  decoration: BoxDecoration(
-                                    border: Border.all(
-                                      color: Colors.grey.shade300,
-                                      width: 2,
+                                    () => _showImageSourceDialog(
+                                      (img) => setState(
+                                        () => _comprobanteDomicilioImage = img,
+                                      ),
                                     ),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child:
-                                      _comprobanteDomicilioImage != null
-                                          ? Stack(
-                                            children: [
-                                              ClipRRect(
-                                                borderRadius:
-                                                    BorderRadius.circular(6),
-                                                child: Image.file(
-                                                  _comprobanteDomicilioImage!,
-                                                  width: double.infinity,
-                                                  height: double.infinity,
-                                                  fit: BoxFit.cover,
-                                                ),
-                                              ),
-                                              Positioned(
-                                                top: 4,
-                                                right: 4,
-                                                child: IconButton(
-                                                  icon: const Icon(
-                                                    Icons.close,
-                                                    color: Colors.white,
-                                                  ),
-                                                  style: IconButton.styleFrom(
-                                                    backgroundColor: Colors.red,
-                                                  ),
-                                                  onPressed:
-                                                      () => setState(
-                                                        () =>
-                                                            _comprobanteDomicilioImage =
-                                                                null,
-                                                      ),
-                                                ),
-                                              ),
-                                            ],
-                                          )
-                                          : Column(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.center,
-                                            children: [
-                                              Icon(
-                                                Icons.add_a_photo,
-                                                size: 40,
-                                                color: Colors.grey.shade600,
-                                              ),
-                                              const SizedBox(height: 8),
-                                              Text(
-                                                'Comprobante de Domicilio',
-                                                style: TextStyle(
-                                                  color: Colors.grey.shade600,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                ),
+                                onRemove:
+                                    () => setState(
+                                      () => _comprobanteDomicilioImage = null,
+                                    ),
                               ),
-                              const SizedBox(height: 16),
-                              ElevatedButton.icon(
+                              const SizedBox(height: 20),
+                              FilledButton.icon(
                                 onPressed:
                                     _isUploading ? null : _uploadDocuments,
                                 icon:
                                     _isUploading
                                         ? const SizedBox(
-                                          width: 20,
-                                          height: 20,
+                                          width: 18,
+                                          height: 18,
                                           child: CircularProgressIndicator(
                                             strokeWidth: 2,
                                             color: Colors.white,
                                           ),
                                         )
-                                        : const Icon(Icons.upload),
+                                        : const Icon(Icons.upload_rounded),
                                 label: Text(
                                   _isUploading
                                       ? 'Subiendo...'
                                       : 'Subir Documentos',
                                 ),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.green.shade700,
-                                  foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 16,
-                                  ),
+                                style: FilledButton.styleFrom(
+                                  minimumSize: const Size.fromHeight(48),
                                 ),
                               ),
                             ],
                           ),
                         ),
                       ),
-                      const SizedBox(height: 24),
+
+                      // ── Document Status ─────────────────────────────────
+                      const SizedBox(height: 20),
                       Text(
                         'Estado de Documentos',
-                        style: Theme.of(context).textTheme.titleLarge,
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 12),
                       if (_documents.isEmpty)
-                        const Card(
+                        Card(
                           child: Padding(
-                            padding: EdgeInsets.all(24),
+                            padding: const EdgeInsets.all(24),
                             child: Center(
-                              child: Text('No has subido documentos'),
+                              child: Text(
+                                'No has subido documentos',
+                                style: TextStyle(color: cs.onSurfaceVariant),
+                              ),
                             ),
                           ),
                         )
                       else
-                        ListView.builder(
+                        ListView.separated(
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
                           itemCount: _documents.length,
+                          separatorBuilder:
+                              (_, __) => const SizedBox(height: 6),
                           itemBuilder: (context, index) {
                             final doc = _documents[index];
+                            final authorized = doc.authored;
                             return Card(
+                              color:
+                                  authorized
+                                      ? cs.secondaryContainer
+                                      : cs.tertiaryContainer,
                               child: ListTile(
                                 leading: Icon(
                                   _getDocumentIcon(doc.docType),
                                   color:
-                                      doc.authored
-                                          ? Colors.green
-                                          : Colors.orange,
+                                      authorized
+                                          ? cs.onSecondaryContainer
+                                          : cs.onTertiaryContainer,
                                 ),
-                                title: Text(_getDocumentTypeName(doc.docType)),
-                                subtitle: Text(doc.originalFilename),
+                                title: Text(
+                                  _getDocumentTypeName(doc.docType),
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    color:
+                                        authorized
+                                            ? cs.onSecondaryContainer
+                                            : cs.onTertiaryContainer,
+                                  ),
+                                ),
+                                subtitle: Text(
+                                  doc.originalFilename,
+                                  style: TextStyle(
+                                    color:
+                                        authorized
+                                            ? cs.onSecondaryContainer
+                                                .withOpacity(0.7)
+                                            : cs.onTertiaryContainer
+                                                .withOpacity(0.7),
+                                  ),
+                                ),
                                 trailing: Container(
                                   padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 6,
+                                    horizontal: 10,
+                                    vertical: 5,
                                   ),
                                   decoration: BoxDecoration(
                                     color:
-                                        doc.authored
-                                            ? Colors.green.shade100
-                                            : Colors.orange.shade100,
-                                    borderRadius: BorderRadius.circular(12),
+                                        authorized ? cs.secondary : cs.tertiary,
+                                    borderRadius: BorderRadius.circular(20),
                                   ),
                                   child: Text(
-                                    doc.authored ? 'Autorizado' : 'Pendiente',
+                                    authorized ? 'Autorizado' : 'Pendiente',
                                     style: TextStyle(
                                       color:
-                                          doc.authored
-                                              ? Colors.green.shade900
-                                              : Colors.orange.shade900,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 12,
+                                          authorized
+                                              ? cs.onSecondary
+                                              : cs.onTertiary,
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 11,
                                     ),
                                   ),
                                 ),
@@ -607,34 +466,38 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             );
                           },
                         ),
-                      const SizedBox(height: 24),
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.blue.shade50,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.blue.shade200),
-                        ),
-                        child: Column(
-                          children: [
-                            Icon(
-                              Icons.info_outline,
-                              color: Colors.blue.shade700,
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Los documentos pendientes serán revisados por un administrador. '
-                              'Una vez autorizados, tendrás acceso completo a todas las funciones.',
-                              style: TextStyle(
-                                color: Colors.blue.shade900,
-                                fontSize: 14,
+
+                      // ── Info Notice ─────────────────────────────────────
+                      const SizedBox(height: 16),
+                      Card(
+                        color: cs.tertiaryContainer,
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Icon(
+                                Icons.info_outline_rounded,
+                                color: cs.onTertiaryContainer,
                               ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ],
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  'Los documentos pendientes serán revisados por un administrador. '
+                                  'Una vez autorizados, tendrás acceso completo a todas las funciones.',
+                                  style: TextStyle(
+                                    color: cs.onTertiaryContainer,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 32),
+
+                      // ── Actions ─────────────────────────────────────────
+                      const SizedBox(height: 24),
                       OutlinedButton.icon(
                         onPressed: () {
                           Navigator.push(
@@ -644,21 +507,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             ),
                           );
                         },
-                        icon: const Icon(Icons.settings),
+                        icon: const Icon(Icons.settings_outlined),
                         label: const Text('Configuración de API'),
                         style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          minimumSize: const Size.fromHeight(48),
                         ),
                       ),
-                      const SizedBox(height: 16),
-                      ElevatedButton.icon(
+                      const SizedBox(height: 12),
+                      FilledButton.icon(
                         onPressed: _handleLogout,
-                        icon: const Icon(Icons.logout),
+                        icon: const Icon(Icons.logout_rounded),
                         label: const Text('Cerrar Sesión'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: cs.errorContainer,
+                          foregroundColor: cs.onErrorContainer,
+                          minimumSize: const Size.fromHeight(48),
                         ),
                       ),
                       const SizedBox(height: 32),
@@ -697,5 +560,121 @@ class _ProfileScreenState extends State<ProfileScreen> {
       default:
         return 'Otro Documento';
     }
+  }
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Reusable document upload tile
+// ────────────────────────────────────────────────────────────────────────────
+
+class _DocUploadTile extends StatelessWidget {
+  final String label;
+  final File? image;
+  final bool disabled;
+  final VoidCallback onTap;
+  final VoidCallback onRemove;
+
+  const _DocUploadTile({
+    required this.label,
+    required this.image,
+    required this.disabled,
+    required this.onTap,
+    required this.onRemove,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final hasImage = image != null;
+
+    return Material(
+      color: hasImage ? cs.secondaryContainer : cs.surfaceContainerHighest,
+      borderRadius: BorderRadius.circular(14),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: disabled ? null : onTap,
+        child: SizedBox(
+          height: 112,
+          child:
+              hasImage
+                  ? Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      Image.file(image!, fit: BoxFit.cover),
+                      // Dark scrim at top
+                      Positioned(
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        child: Container(
+                          height: 40,
+                          decoration: const BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [Colors.black45, Colors.transparent],
+                            ),
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        top: 6,
+                        left: 10,
+                        child: Text(
+                          label,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 12,
+                            shadows: [
+                              Shadow(blurRadius: 4, color: Colors.black54),
+                            ],
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        top: 4,
+                        right: 4,
+                        child: Material(
+                          color: cs.error,
+                          shape: const CircleBorder(),
+                          child: InkWell(
+                            customBorder: const CircleBorder(),
+                            onTap: onRemove,
+                            child: Padding(
+                              padding: const EdgeInsets.all(4),
+                              child: Icon(
+                                Icons.close_rounded,
+                                size: 16,
+                                color: cs.onError,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  )
+                  : Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.add_a_photo_outlined,
+                        size: 32,
+                        color: cs.onSurfaceVariant,
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        label,
+                        style: TextStyle(
+                          color: cs.onSurfaceVariant,
+                          fontWeight: FontWeight.w500,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                  ),
+        ),
+      ),
+    );
   }
 }

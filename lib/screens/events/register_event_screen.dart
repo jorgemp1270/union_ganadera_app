@@ -33,22 +33,28 @@ class _RegisterEventScreenState extends State<RegisterEventScreen> {
   final _alimentoController = TextEditingController();
 
   // Vacunacion fields
-  final _veterinarioIdController = TextEditingController();
   final _vacunaTipoController = TextEditingController();
   final _vacunaLoteController = TextEditingController();
   final _vacunaLaboratorioController = TextEditingController();
   DateTime? _vacunaFechaProx;
 
   // Desparasitacion fields
-  final _desparasitacionVetController = TextEditingController();
   final _medicamentoController = TextEditingController();
   final _dosisController = TextEditingController();
   DateTime? _desparasitacionFechaProx;
 
   // Laboratorio fields
-  final _laboratorioVetController = TextEditingController();
   final _laboratorioTipoController = TextEditingController();
   final _resultadoController = TextEditingController();
+
+  // Enfermedad fields
+  final _enfermedadDescController = TextEditingController();
+  final _tratamientoDescController = TextEditingController();
+
+  // Tratamiento fields
+  final _tratamientoController = TextEditingController();
+  final _medicamentoTratController = TextEditingController();
+  final _dosisTratController = TextEditingController();
 
   // Compraventa fields
   final _compradorCurpController = TextEditingController();
@@ -73,7 +79,7 @@ class _RegisterEventScreenState extends State<RegisterEventScreen> {
         _vendedorCurpController.text = user.curp;
       });
     } catch (e) {
-      // Ignore error, user can input manually
+      // Ignore error
     }
   }
 
@@ -83,16 +89,18 @@ class _RegisterEventScreenState extends State<RegisterEventScreen> {
   void dispose() {
     _pesoController.dispose();
     _alimentoController.dispose();
-    _veterinarioIdController.dispose();
     _vacunaTipoController.dispose();
     _vacunaLoteController.dispose();
     _vacunaLaboratorioController.dispose();
-    _desparasitacionVetController.dispose();
     _medicamentoController.dispose();
     _dosisController.dispose();
-    _laboratorioVetController.dispose();
     _laboratorioTipoController.dispose();
     _resultadoController.dispose();
+    _enfermedadDescController.dispose();
+    _tratamientoDescController.dispose();
+    _tratamientoController.dispose();
+    _medicamentoTratController.dispose();
+    _dosisTratController.dispose();
     _compradorCurpController.dispose();
     _vendedorCurpController.dispose();
     _observacionesController.dispose();
@@ -100,72 +108,99 @@ class _RegisterEventScreenState extends State<RegisterEventScreen> {
   }
 
   Future<void> _handleSubmit() async {
-    if (!_formKey.currentState!.validate()) {
+    if (!_formKey.currentState!.validate()) return;
+
+    const vetEventTypes = {
+      'vacunacion',
+      'desparasitacion',
+      'laboratorio',
+      'enfermedad',
+      'tratamiento',
+    };
+    if (vetEventTypes.contains(_eventType) && _currentUser == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Error: no se pudo obtener el usuario actual'),
+        ),
+      );
       return;
     }
 
     setState(() => _isLoading = true);
 
     try {
+      final obs =
+          _observacionesController.text.trim().isEmpty
+              ? null
+              : _observacionesController.text.trim();
+
       for (final bovino in widget.bovinos) {
         switch (_eventType) {
           case 'peso':
             await _eventoService.createPesoEvent(
               bovinoId: bovino.id,
               pesoNuevo: double.parse(_pesoController.text),
-              observaciones:
-                  _observacionesController.text.trim().isEmpty
-                      ? null
-                      : _observacionesController.text.trim(),
+              observaciones: obs,
             );
             break;
           case 'dieta':
             await _eventoService.createDietaEvent(
               bovinoId: bovino.id,
               alimento: _alimentoController.text,
-              observaciones:
-                  _observacionesController.text.trim().isEmpty
-                      ? null
-                      : _observacionesController.text.trim(),
+              observaciones: obs,
             );
             break;
           case 'vacunacion':
             await _eventoService.createVacunacionEvent(
               bovinoId: bovino.id,
-              veterinarioId: _veterinarioIdController.text,
+              veterinarioId: _currentUser!.id,
               tipo: _vacunaTipoController.text,
               lote: _vacunaLoteController.text,
               laboratorio: _vacunaLaboratorioController.text,
-              fechaProx: _vacunaFechaProx!,
-              observaciones:
-                  _observacionesController.text.trim().isEmpty
-                      ? null
-                      : _observacionesController.text.trim(),
+              fechaProx:
+                  _vacunaFechaProx ??
+                  DateTime.now().add(const Duration(days: 30)),
+              observaciones: obs,
             );
             break;
           case 'desparasitacion':
             await _eventoService.createDesparasitacionEvent(
               bovinoId: bovino.id,
-              veterinarioId: _desparasitacionVetController.text,
+              veterinarioId: _currentUser!.id,
               medicamento: _medicamentoController.text,
               dosis: _dosisController.text,
-              fechaProx: _desparasitacionFechaProx!,
-              observaciones:
-                  _observacionesController.text.trim().isEmpty
-                      ? null
-                      : _observacionesController.text.trim(),
+              fechaProx:
+                  _desparasitacionFechaProx ??
+                  DateTime.now().add(const Duration(days: 90)),
+              observaciones: obs,
             );
             break;
           case 'laboratorio':
             await _eventoService.createLaboratorioEvent(
               bovinoId: bovino.id,
-              veterinarioId: _laboratorioVetController.text,
+              veterinarioId: _currentUser!.id,
               tipo: _laboratorioTipoController.text,
               resultado: _resultadoController.text,
-              observaciones:
-                  _observacionesController.text.trim().isEmpty
-                      ? null
-                      : _observacionesController.text.trim(),
+              observaciones: obs,
+            );
+            break;
+          case 'enfermedad':
+            await _eventoService.createEnfermedadEvent(
+              bovinoId: bovino.id,
+              veterinarioId: _currentUser!.id,
+              tipo: _enfermedadDescController.text,
+              observaciones: obs,
+            );
+            break;
+          case 'tratamiento':
+            await _eventoService.createTratamientoEvent(
+              bovinoId: bovino.id,
+              enfermedadId: 'placeholder',
+              veterinarioId: _currentUser!.id,
+              medicamento: _medicamentoTratController.text,
+              dosis: _dosisTratController.text,
+              periodo: _tratamientoController.text,
+              observaciones: obs,
             );
             break;
           case 'compraventa':
@@ -173,10 +208,7 @@ class _RegisterEventScreenState extends State<RegisterEventScreen> {
               bovinoId: bovino.id,
               compradorCurp: _compradorCurpController.text.toUpperCase(),
               vendedorCurp: _vendedorCurpController.text.toUpperCase(),
-              observaciones:
-                  _observacionesController.text.trim().isEmpty
-                      ? null
-                      : _observacionesController.text.trim(),
+              observaciones: obs,
             );
             break;
         }
@@ -191,63 +223,81 @@ class _RegisterEventScreenState extends State<RegisterEventScreen> {
                 ? 'Evento registrado exitosamente'
                 : 'Eventos registrados para ${widget.bovinos.length} bovinos',
           ),
-          backgroundColor: Colors.green,
         ),
       );
 
       Navigator.of(context).pop();
     } catch (e) {
       if (!mounted) return;
-
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error: ${e.toString()}'),
-          backgroundColor: Colors.red,
-        ),
+        SnackBar(content: Text('Error: ${e.toString()}')),
       );
     } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
+  Future<DateTime?> _pickDate({
+    required DateTime initial,
+    required DateTime last,
+  }) =>
+      showDatePicker(
+        context: context,
+        initialDate: initial,
+        firstDate: DateTime.now(),
+        lastDate: last,
+      );
+
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: ModernAppBar(
         title:
             widget.bovinos.length == 1
                 ? 'Registrar Evento'
-                : 'Evento para ${widget.bovinos.length} bovinos',
-        backgroundColor: Colors.green.shade700,
+                : 'Evento · ${widget.bovinos.length} bovinos',
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
         child: Form(
           key: _formKey,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               if (widget.bovinos.length > 1)
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.blue.shade50,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.blue.shade200),
-                  ),
-                  child: Text(
-                    'Este evento se registrará para todos los bovinos seleccionados',
-                    style: TextStyle(color: Colors.blue.shade900),
+                Card(
+                  color: cs.secondaryContainer,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.info_outline_rounded,
+                          color: cs.onSecondaryContainer,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'Este evento se registrará para '
+                            '${widget.bovinos.length} bovinos seleccionados.',
+                            style: TextStyle(color: cs.onSecondaryContainer),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              const SizedBox(height: 24),
+              if (widget.bovinos.length > 1) const SizedBox(height: 16),
+
               DropdownButtonFormField<String>(
                 value: _eventType,
                 decoration: const InputDecoration(
                   labelText: 'Tipo de Evento',
-                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.event_rounded),
                 ),
                 items: [
                   const DropdownMenuItem(
@@ -258,36 +308,44 @@ class _RegisterEventScreenState extends State<RegisterEventScreen> {
                     value: 'dieta',
                     child: Text('Cambio de Dieta'),
                   ),
-                  // Veterinary events - only show to veterinarians
                   if (_isVeterinarian) ...[
                     const DropdownMenuItem(
                       value: 'vacunacion',
-                      child: Text('Vacunaci\u00f3n'),
+                      child: Text('Vacunación'),
                     ),
                     const DropdownMenuItem(
                       value: 'desparasitacion',
-                      child: Text('Desparasitaci\u00f3n'),
+                      child: Text('Desparasitación'),
                     ),
                     const DropdownMenuItem(
                       value: 'laboratorio',
-                      child: Text('An\u00e1lisis de Laboratorio'),
+                      child: Text('Análisis de Laboratorio'),
+                    ),
+                    const DropdownMenuItem(
+                      value: 'enfermedad',
+                      child: Text('Enfermedad'),
+                    ),
+                    const DropdownMenuItem(
+                      value: 'tratamiento',
+                      child: Text('Tratamiento'),
                     ),
                   ],
                   const DropdownMenuItem(
                     value: 'compraventa',
-                    child: Text('Compra/Venta'),
+                    child: Text('Compra / Venta'),
                   ),
                 ],
                 onChanged: (value) => setState(() => _eventType = value!),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 20),
+
+              // ─── Peso ───────────────────────────────────────────────────
               if (_eventType == 'peso') ...[
                 TextFormField(
                   controller: _pesoController,
                   decoration: const InputDecoration(
                     labelText: 'Peso Actual (kg)',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.monitor_weight),
+                    prefixIcon: Icon(Icons.monitor_weight_outlined),
                   ),
                   keyboardType: TextInputType.number,
                   validator: (value) {
@@ -301,184 +359,191 @@ class _RegisterEventScreenState extends State<RegisterEventScreen> {
                   },
                 ),
               ],
+
+              // ─── Dieta ──────────────────────────────────────────────────
               if (_eventType == 'dieta') ...[
                 TextFormField(
                   controller: _alimentoController,
                   decoration: const InputDecoration(
                     labelText: 'Tipo de Alimento',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.restaurant),
+                    prefixIcon: Icon(Icons.restaurant_rounded),
                   ),
                   maxLines: 2,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'El tipo de alimento es requerido';
-                    }
-                    return null;
-                  },
+                  validator:
+                      (v) =>
+                          v == null || v.isEmpty
+                              ? 'El tipo de alimento es requerido'
+                              : null,
                 ),
               ],
+
+              // ─── Vacunación ─────────────────────────────────────────────
               if (_eventType == 'vacunacion') ...[
-                TextFormField(
-                  controller: _veterinarioIdController,
-                  decoration: const InputDecoration(
-                    labelText: 'ID del Veterinario',
-                    border: OutlineInputBorder(),
-                  ),
-                  validator:
-                      (value) => value?.isEmpty ?? true ? 'Requerido' : null,
-                ),
-                const SizedBox(height: 16),
                 TextFormField(
                   controller: _vacunaTipoController,
                   decoration: const InputDecoration(
                     labelText: 'Tipo de Vacuna',
-                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.vaccines_rounded),
                   ),
                   validator:
-                      (value) => value?.isEmpty ?? true ? 'Requerido' : null,
+                      (v) => v?.isEmpty ?? true ? 'Campo requerido' : null,
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _vacunaLoteController,
                   decoration: const InputDecoration(
                     labelText: 'Lote',
-                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.tag_rounded),
                   ),
                   validator:
-                      (value) => value?.isEmpty ?? true ? 'Requerido' : null,
+                      (v) => v?.isEmpty ?? true ? 'Campo requerido' : null,
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _vacunaLaboratorioController,
                   decoration: const InputDecoration(
                     labelText: 'Laboratorio',
-                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.science_rounded),
                   ),
                   validator:
-                      (value) => value?.isEmpty ?? true ? 'Requerido' : null,
+                      (v) => v?.isEmpty ?? true ? 'Campo requerido' : null,
                 ),
                 const SizedBox(height: 16),
-                InkWell(
+                _DatePickerField(
+                  label: 'Próxima Vacunación (opcional)',
+                  value: _vacunaFechaProx,
                   onTap: () async {
-                    final date = await showDatePicker(
-                      context: context,
-                      initialDate: DateTime.now().add(
-                        const Duration(days: 365),
-                      ),
-                      firstDate: DateTime.now(),
-                      lastDate: DateTime.now().add(const Duration(days: 3650)),
+                    final d = await _pickDate(
+                      initial: DateTime.now().add(const Duration(days: 365)),
+                      last: DateTime.now().add(const Duration(days: 3650)),
                     );
-                    if (date != null) setState(() => _vacunaFechaProx = date);
+                    if (d != null) setState(() => _vacunaFechaProx = d);
                   },
-                  child: InputDecorator(
-                    decoration: const InputDecoration(
-                      labelText: 'Fecha Pr\u00f3xima Vacunaci\u00f3n',
-                      border: OutlineInputBorder(),
-                    ),
-                    child: Text(
-                      _vacunaFechaProx != null
-                          ? '${_vacunaFechaProx!.day}/${_vacunaFechaProx!.month}/${_vacunaFechaProx!.year}'
-                          : 'Seleccionar fecha',
-                    ),
-                  ),
                 ),
               ],
+
+              // ─── Desparasitación ────────────────────────────────────────
               if (_eventType == 'desparasitacion') ...[
-                TextFormField(
-                  controller: _desparasitacionVetController,
-                  decoration: const InputDecoration(
-                    labelText: 'ID del Veterinario',
-                    border: OutlineInputBorder(),
-                  ),
-                  validator:
-                      (value) => value?.isEmpty ?? true ? 'Requerido' : null,
-                ),
-                const SizedBox(height: 16),
                 TextFormField(
                   controller: _medicamentoController,
                   decoration: const InputDecoration(
                     labelText: 'Medicamento',
-                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.medication_rounded),
                   ),
                   validator:
-                      (value) => value?.isEmpty ?? true ? 'Requerido' : null,
+                      (v) => v?.isEmpty ?? true ? 'Campo requerido' : null,
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _dosisController,
                   decoration: const InputDecoration(
                     labelText: 'Dosis',
-                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.colorize_rounded),
                   ),
                   validator:
-                      (value) => value?.isEmpty ?? true ? 'Requerido' : null,
+                      (v) => v?.isEmpty ?? true ? 'Campo requerido' : null,
                 ),
                 const SizedBox(height: 16),
-                InkWell(
+                _DatePickerField(
+                  label: 'Próxima Desparasitación (opcional)',
+                  value: _desparasitacionFechaProx,
                   onTap: () async {
-                    final date = await showDatePicker(
-                      context: context,
-                      initialDate: DateTime.now().add(
-                        const Duration(days: 180),
-                      ),
-                      firstDate: DateTime.now(),
-                      lastDate: DateTime.now().add(const Duration(days: 1825)),
+                    final d = await _pickDate(
+                      initial: DateTime.now().add(const Duration(days: 180)),
+                      last: DateTime.now().add(const Duration(days: 1825)),
                     );
-                    if (date != null)
-                      setState(() => _desparasitacionFechaProx = date);
+                    if (d != null) setState(() => _desparasitacionFechaProx = d);
                   },
-                  child: InputDecorator(
-                    decoration: const InputDecoration(
-                      labelText: 'Fecha Pr\u00f3xima Desparasitaci\u00f3n',
-                      border: OutlineInputBorder(),
-                    ),
-                    child: Text(
-                      _desparasitacionFechaProx != null
-                          ? '${_desparasitacionFechaProx!.day}/${_desparasitacionFechaProx!.month}/${_desparasitacionFechaProx!.year}'
-                          : 'Seleccionar fecha',
-                    ),
-                  ),
                 ),
               ],
+
+              // ─── Laboratorio ────────────────────────────────────────────
               if (_eventType == 'laboratorio') ...[
-                TextFormField(
-                  controller: _laboratorioVetController,
-                  decoration: const InputDecoration(
-                    labelText: 'ID del Veterinario',
-                    border: OutlineInputBorder(),
-                  ),
-                  validator:
-                      (value) => value?.isEmpty ?? true ? 'Requerido' : null,
-                ),
-                const SizedBox(height: 16),
                 TextFormField(
                   controller: _laboratorioTipoController,
                   decoration: const InputDecoration(
-                    labelText: 'Tipo de An\u00e1lisis',
-                    border: OutlineInputBorder(),
+                    labelText: 'Tipo de Análisis',
+                    prefixIcon: Icon(Icons.biotech_rounded),
                   ),
                   validator:
-                      (value) => value?.isEmpty ?? true ? 'Requerido' : null,
+                      (v) => v?.isEmpty ?? true ? 'Campo requerido' : null,
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _resultadoController,
                   decoration: const InputDecoration(
                     labelText: 'Resultado',
-                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.assignment_rounded),
                   ),
                   maxLines: 3,
                   validator:
-                      (value) => value?.isEmpty ?? true ? 'Requerido' : null,
+                      (v) => v?.isEmpty ?? true ? 'Campo requerido' : null,
                 ),
               ],
+
+              // ─── Enfermedad ─────────────────────────────────────────────
+              if (_eventType == 'enfermedad') ...[
+                TextFormField(
+                  controller: _enfermedadDescController,
+                  decoration: const InputDecoration(
+                    labelText: 'Descripción de la Enfermedad',
+                    prefixIcon: Icon(Icons.sick_rounded),
+                  ),
+                  maxLines: 2,
+                  validator:
+                      (v) => v?.isEmpty ?? true ? 'Campo requerido' : null,
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _tratamientoDescController,
+                  decoration: const InputDecoration(
+                    labelText: 'Tratamiento Aplicado',
+                    prefixIcon: Icon(Icons.healing_rounded),
+                  ),
+                  maxLines: 2,
+                ),
+              ],
+
+              // ─── Tratamiento ────────────────────────────────────────────
+              if (_eventType == 'tratamiento') ...[
+                TextFormField(
+                  controller: _tratamientoController,
+                  decoration: const InputDecoration(
+                    labelText: 'Período / Descripción del Tratamiento',
+                    prefixIcon: Icon(Icons.schedule_rounded),
+                  ),
+                  validator:
+                      (v) => v?.isEmpty ?? true ? 'Campo requerido' : null,
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _medicamentoTratController,
+                  decoration: const InputDecoration(
+                    labelText: 'Medicamento',
+                    prefixIcon: Icon(Icons.medication_rounded),
+                  ),
+                  validator:
+                      (v) => v?.isEmpty ?? true ? 'Campo requerido' : null,
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _dosisTratController,
+                  decoration: const InputDecoration(
+                    labelText: 'Dosis',
+                    prefixIcon: Icon(Icons.colorize_rounded),
+                  ),
+                  validator:
+                      (v) => v?.isEmpty ?? true ? 'Campo requerido' : null,
+                ),
+              ],
+
+              // ─── Compraventa ────────────────────────────────────────────
               if (_eventType == 'compraventa') ...[
                 TextFormField(
                   controller: _compradorCurpController,
                   decoration: const InputDecoration(
                     labelText: 'CURP del Comprador',
-                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.person_rounded),
                   ),
                   textCapitalization: TextCapitalization.characters,
                   inputFormatters: [
@@ -502,66 +567,86 @@ class _RegisterEventScreenState extends State<RegisterEventScreen> {
                   controller: _vendedorCurpController,
                   decoration: const InputDecoration(
                     labelText: 'CURP del Vendedor',
-                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.badge_outlined),
                     helperText: 'Se usa tu CURP guardado por defecto',
-                    enabled:
-                        false, // Vendedor es siempre el usuario actual, no se puede cambiar
                   ),
+                  enabled: false,
                   textCapitalization: TextCapitalization.characters,
-                  inputFormatters: [
-                    FilteringTextInputFormatter.allow(RegExp(r'[A-Z0-9]')),
-                    TextInputFormatter.withFunction(
-                      (oldValue, newValue) => TextEditingValue(
-                        text: newValue.text.toUpperCase(),
-                        selection: newValue.selection,
-                      ),
-                    ),
-                  ],
                   maxLength: 18,
-                  validator: (value) {
-                    if (value?.isEmpty ?? true) return 'Requerido';
-                    if (value!.length != 18) return 'Debe tener 18 caracteres';
-                    return null;
-                  },
                 ),
               ],
+
+              // ─── Observaciones (all events) ─────────────────────────────
               const SizedBox(height: 16),
               TextFormField(
                 controller: _observacionesController,
                 decoration: const InputDecoration(
                   labelText: 'Observaciones (Opcional)',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.note),
+                  prefixIcon: Icon(Icons.notes_rounded),
                 ),
                 maxLines: 3,
               ),
-              const SizedBox(height: 32),
-              ElevatedButton(
+
+              const SizedBox(height: 28),
+              FilledButton.icon(
                 onPressed: _isLoading ? null : _handleSubmit,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green.shade700,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                child:
+                icon:
                     _isLoading
                         ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
+                          height: 18,
+                          width: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                        : const Text(
-                          'Registrar Evento',
-                          style: TextStyle(fontSize: 16),
-                        ),
+                        : const Icon(Icons.check_circle_outline_rounded),
+                label: Text(
+                  widget.bovinos.length == 1
+                      ? 'Registrar Evento'
+                      : 'Registrar para ${widget.bovinos.length} bovinos',
+                ),
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size.fromHeight(50),
+                ),
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Helper widget ──────────────────────────────────────────────────────────
+
+class _DatePickerField extends StatelessWidget {
+  final String label;
+  final DateTime? value;
+  final VoidCallback onTap;
+
+  const _DatePickerField({
+    required this.label,
+    required this.value,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: InputDecorator(
+        decoration: InputDecoration(
+          labelText: label,
+          suffixIcon: const Icon(Icons.calendar_today_rounded),
+        ),
+        child: Text(
+          value != null
+              ? '${value!.day}/${value!.month}/${value!.year}'
+              : 'Seleccionar fecha',
+          style: TextStyle(
+            color:
+                value != null
+                    ? Theme.of(context).colorScheme.onSurface
+                    : Theme.of(context).colorScheme.onSurfaceVariant,
           ),
         ),
       ),

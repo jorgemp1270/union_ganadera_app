@@ -39,13 +39,13 @@ class _AuthScreenState extends State<AuthScreen>
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: ModernAppBar(
         title: 'Unión Ganadera',
-        backgroundColor: Colors.green.shade700,
         actions: [
           IconButton(
-            icon: const Icon(Icons.settings, color: Colors.white),
+            icon: const Icon(Icons.settings_outlined),
             tooltip: 'Configuración de API',
             onPressed: () {
               Navigator.push(
@@ -57,8 +57,13 @@ class _AuthScreenState extends State<AuthScreen>
         ],
         bottom: TabBar(
           controller: _tabController,
-          indicatorColor: Colors.white,
-          labelColor: Colors.white,
+          indicatorColor: cs.onPrimary,
+          labelColor: cs.onPrimary,
+          unselectedLabelColor: cs.onPrimary.withOpacity(0.65),
+          indicator: UnderlineTabIndicator(
+            borderSide: BorderSide(color: cs.onPrimary, width: 3),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(3)),
+          ),
           tabs: const [Tab(text: 'Iniciar Sesión'), Tab(text: 'Registrarse')],
         ),
       ),
@@ -168,32 +173,44 @@ class _LoginTabState extends State<LoginTab> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const SizedBox(height: 40),
-              Icon(Icons.pets, size: 80, color: Colors.green.shade700),
+              Container(
+                width: 88,
+                height: 88,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primaryContainer,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.agriculture_rounded,
+                  size: 48,
+                  color: Theme.of(context).colorScheme.onPrimaryContainer,
+                ),
+              ),
               const SizedBox(height: 24),
               Text(
                 'Bienvenido',
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.green.shade700,
+                  fontWeight: FontWeight.w800,
+                  color: Theme.of(context).colorScheme.onSurface,
+                  letterSpacing: -0.5,
                 ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 6),
               Text(
                 'Ingresa a tu cuenta',
-                style: Theme.of(
-                  context,
-                ).textTheme.titleMedium?.copyWith(color: Colors.grey.shade600),
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 48),
+              const SizedBox(height: 40),
               TextFormField(
                 controller: _curpController,
                 decoration: const InputDecoration(
                   labelText: 'CURP',
                   hintText: 'Ingresa tu CURP',
-                  prefixIcon: Icon(Icons.person),
-                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.badge_outlined),
                 ),
                 textCapitalization: TextCapitalization.characters,
                 inputFormatters: [
@@ -222,18 +239,17 @@ class _LoginTabState extends State<LoginTab> {
                 decoration: InputDecoration(
                   labelText: 'Contraseña',
                   hintText: 'Ingresa tu contraseña',
-                  prefixIcon: const Icon(Icons.lock),
+                  prefixIcon: const Icon(Icons.lock_outline_rounded),
                   suffixIcon: IconButton(
                     icon: Icon(
                       _obscurePassword
-                          ? Icons.visibility
-                          : Icons.visibility_off,
+                          ? Icons.visibility_outlined
+                          : Icons.visibility_off_outlined,
                     ),
                     onPressed: () {
                       setState(() => _obscurePassword = !_obscurePassword);
                     },
                   ),
-                  border: const OutlineInputBorder(),
                 ),
                 obscureText: _obscurePassword,
                 validator: (value) {
@@ -248,34 +264,25 @@ class _LoginTabState extends State<LoginTab> {
                 title: const Text('Recordar credenciales'),
                 value: _saveCredentials,
                 onChanged: (value) => setState(() => _saveCredentials = value),
-                activeColor: Colors.green.shade700,
                 contentPadding: EdgeInsets.zero,
               ),
-              const SizedBox(height: 16),
-              ElevatedButton(
+              const SizedBox(height: 20),
+              FilledButton(
                 onPressed: _isLoading ? null : _handleLogin,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green.shade700,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size.fromHeight(52),
                 ),
                 child:
                     _isLoading
                         ? const SizedBox(
-                          height: 20,
-                          width: 20,
+                          height: 22,
+                          width: 22,
                           child: CircularProgressIndicator(
-                            strokeWidth: 2,
+                            strokeWidth: 2.5,
                             color: Colors.white,
                           ),
                         )
-                        : const Text(
-                          'Iniciar Sesión',
-                          style: TextStyle(fontSize: 16),
-                        ),
+                        : const Text('Iniciar Sesión'),
               ),
             ],
           ),

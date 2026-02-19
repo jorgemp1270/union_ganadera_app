@@ -53,84 +53,95 @@ class _PrediosScreenState extends State<PrediosScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: const ModernAppBar(
-        title: 'Mis Predios',
-        backgroundColor: Colors.green,
-      ),
+      appBar: const ModernAppBar(title: 'Mis Predios'),
       body:
           _isLoading
               ? const Center(child: CircularProgressIndicator())
               : _predios.isEmpty
-              ? Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.location_on,
-                      size: 80,
-                      color: Colors.grey.shade400,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'No tienes predios registrados',
-                      style: TextStyle(
-                        fontSize: 18,
-                        color: Colors.grey.shade600,
-                      ),
-                    ),
-                  ],
-                ),
-              )
+              ? _buildEmptyState()
               : RefreshIndicator(
                 onRefresh: _loadPredios,
                 child: ListView.builder(
                   itemCount: _predios.length,
-                  padding: const EdgeInsets.all(8),
+                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 96),
                   itemBuilder: (context, index) {
                     final predio = _predios[index];
+                    final cs = Theme.of(context).colorScheme;
                     return Card(
-                      margin: const EdgeInsets.symmetric(vertical: 4),
-                      child: ListTile(
-                        leading: CircleAvatar(
-                          backgroundColor: Colors.green.shade700,
-                          child: const Icon(
-                            Icons.location_on,
-                            color: Colors.white,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(16),
+                        onTap: () {},
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 12,
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 48,
+                                height: 48,
+                                decoration: BoxDecoration(
+                                  color: cs.primaryContainer,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  Icons.landscape_rounded,
+                                  color: cs.onPrimaryContainer,
+                                  size: 24,
+                                ),
+                              ),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      predio.claveCatastral ??
+                                          'Sin clave catastral',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 15,
+                                        color: cs.onSurface,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    if (predio.superficieTotal != null)
+                                      Text(
+                                        '${predio.superficieTotal} hectáreas',
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          color: cs.onSurfaceVariant,
+                                        ),
+                                      ),
+                                    if (predio.latitud != null &&
+                                        predio.longitud != null)
+                                      Text(
+                                        'GPS: ${predio.latitud!.toStringAsFixed(4)}, ${predio.longitud!.toStringAsFixed(4)}',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: cs.onSurfaceVariant
+                                              .withOpacity(0.7),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                              Icon(
+                                Icons.chevron_right_rounded,
+                                color: cs.onSurfaceVariant,
+                              ),
+                            ],
                           ),
                         ),
-                        title: Text(
-                          predio.claveCatastral ?? 'Sin clave catastral',
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            if (predio.superficieTotal != null)
-                              Text(
-                                'Superficie: ${predio.superficieTotal} hectáreas',
-                              ),
-                            if (predio.latitud != null &&
-                                predio.longitud != null)
-                              Text(
-                                'Lat: ${predio.latitud}, Long: ${predio.longitud}',
-                              ),
-                          ],
-                        ),
-                        trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                        onTap: () {
-                          // Navigate to predio detail if needed
-                        },
                       ),
                     );
                   },
                 ),
               ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          _showRegisterPredioDialog();
-        },
-        backgroundColor: Colors.green.shade700,
-        icon: const Icon(Icons.add),
+        onPressed: _showRegisterPredioDialog,
+        icon: const Icon(Icons.add_rounded),
         label: const Text('Registrar Predio'),
       ),
     );
@@ -140,12 +151,54 @@ class _PrediosScreenState extends State<PrediosScreen> {
     await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      useSafeArea: true,
       builder:
           (context) => _RegisterPredioDialog(
             predioService: _predioService,
             onSuccess: _loadPredios,
           ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    final cs = Theme.of(context).colorScheme;
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 96,
+              height: 96,
+              decoration: BoxDecoration(
+                color: cs.primaryContainer,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.landscape_outlined,
+                size: 52,
+                color: cs.onPrimaryContainer,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'Sin predios registrados',
+              style: TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w600,
+                color: cs.onSurface,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Usa el botón de abajo para registrar tu primera propiedad.',
+              style: TextStyle(fontSize: 14, color: cs.onSurfaceVariant),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -302,12 +355,13 @@ class _RegisterPredioDialogState extends State<_RegisterPredioDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(20),
-          topRight: Radius.circular(20),
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerLow,
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(28),
+          topRight: Radius.circular(28),
         ),
       ),
       padding: EdgeInsets.only(
@@ -315,95 +369,110 @@ class _RegisterPredioDialogState extends State<_RegisterPredioDialog> {
       ),
       child: SingleChildScrollView(
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
           child: Form(
             key: _formKey,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                // drag handle area
+                Center(
+                  child: Container(
+                    width: 36,
+                    height: 4,
+                    margin: const EdgeInsets.only(top: 8, bottom: 20),
+                    decoration: BoxDecoration(
+                      color: cs.outlineVariant,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                ),
                 Row(
                   children: [
                     Expanded(
                       child: Text(
                         'Registrar Predio',
-                        style: Theme.of(context).textTheme.headlineSmall,
+                        style: Theme.of(context).textTheme.headlineSmall
+                            ?.copyWith(fontWeight: FontWeight.w700),
                       ),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.close),
+                      icon: const Icon(Icons.close_rounded),
                       onPressed: () => Navigator.of(context).pop(),
                     ),
                   ],
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 20),
                 TextFormField(
                   controller: _claveCatastralController,
                   decoration: const InputDecoration(
                     labelText: 'Clave Catastral',
-                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.tag_rounded),
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 14),
                 TextFormField(
                   controller: _superficieTotalController,
                   decoration: const InputDecoration(
                     labelText: 'Superficie Total (hectáreas)',
-                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.straighten_rounded),
                   ),
                   keyboardType: TextInputType.number,
                 ),
-                const SizedBox(height: 16),
-                ElevatedButton.icon(
+                const SizedBox(height: 14),
+                FilledButton.tonalIcon(
                   onPressed: _isLoadingLocation ? null : _getCurrentLocation,
                   icon:
                       _isLoadingLocation
                           ? const SizedBox(
-                            width: 16,
-                            height: 16,
+                            width: 18,
+                            height: 18,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
                           : Icon(
                             _currentPosition == null
-                                ? Icons.location_searching
-                                : Icons.check_circle,
+                                ? Icons.location_searching_rounded
+                                : Icons.check_circle_outline_rounded,
                           ),
                   label: Text(
                     _currentPosition == null
                         ? 'Obtener Ubicación'
-                        : 'Ubicación Obtenida',
+                        : 'Ubicación obtenida',
                   ),
-                  style: ElevatedButton.styleFrom(
+                  style: FilledButton.styleFrom(
                     backgroundColor:
-                        _currentPosition == null ? Colors.blue : Colors.green,
-                    foregroundColor: Colors.white,
+                        _currentPosition == null ? null : cs.secondaryContainer,
+                    foregroundColor:
+                        _currentPosition == null
+                            ? null
+                            : cs.onSecondaryContainer,
                   ),
                 ),
                 if (_currentPosition != null)
                   Padding(
-                    padding: const EdgeInsets.only(top: 8),
+                    padding: const EdgeInsets.only(top: 6),
                     child: Text(
                       'Lat: ${_currentPosition!.latitude.toStringAsFixed(6)}, '
                       'Long: ${_currentPosition!.longitude.toStringAsFixed(6)}',
-                      style: const TextStyle(fontSize: 12),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: cs.onSurfaceVariant,
+                      ),
                     ),
                   ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 14),
                 OutlinedButton.icon(
                   onPressed: _pickDocument,
                   icon: Icon(
                     _documentFile == null
-                        ? Icons.camera_alt
-                        : Icons.check_circle,
+                        ? Icons.attach_file_rounded
+                        : Icons.check_circle_outline_rounded,
                   ),
                   label: Text(
                     _documentFile == null
                         ? 'Adjuntar Comprobante'
                         : 'Comprobante adjunto',
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor:
-                        _documentFile == null ? Colors.blue : Colors.green,
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -414,18 +483,14 @@ class _RegisterPredioDialogState extends State<_RegisterPredioDialog> {
                       onPressed: () => Navigator.of(context).pop(),
                       child: const Text('Cancelar'),
                     ),
-                    const SizedBox(width: 8),
-                    ElevatedButton(
+                    const SizedBox(width: 10),
+                    FilledButton(
                       onPressed: _isLoading ? null : _handleSubmit,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green.shade700,
-                        foregroundColor: Colors.white,
-                      ),
                       child:
                           _isLoading
                               ? const SizedBox(
-                                width: 16,
-                                height: 16,
+                                width: 18,
+                                height: 18,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
                                   color: Colors.white,

@@ -10,19 +10,35 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> {
+class _SplashScreenState extends State<SplashScreen>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnim;
+  late Animation<double> _fadeAnim;
+
   @override
   void initState() {
     super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    );
+    _scaleAnim = CurvedAnimation(parent: _controller, curve: Curves.elasticOut);
+    _fadeAnim = CurvedAnimation(parent: _controller, curve: Curves.easeIn);
+    _controller.forward();
     _navigateToNext();
   }
 
-  Future<void> _navigateToNext() async {
-    await Future.delayed(const Duration(seconds: 2));
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
+  Future<void> _navigateToNext() async {
+    await Future.delayed(const Duration(milliseconds: 2200));
     if (!mounted) return;
 
-    // Initialize API client and check if user is logged in
     final apiClient = ApiClient();
     await apiClient.initialize();
     final token = await apiClient.getToken();
@@ -42,30 +58,84 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
     return Scaffold(
-      backgroundColor: Colors.green.shade700,
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.pets, size: 100, color: Colors.white),
-            const SizedBox(height: 24),
-            const Text(
-              'Unión Ganadera',
-              style: TextStyle(
-                fontSize: 32,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [cs.primary, cs.primaryContainer],
+            stops: const [0.0, 1.0],
+          ),
+        ),
+        child: SafeArea(
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Animated icon
+                ScaleTransition(
+                  scale: _scaleAnim,
+                  child: Container(
+                    width: 120,
+                    height: 120,
+                    decoration: BoxDecoration(
+                      color: cs.onPrimary.withOpacity(0.15),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: cs.onPrimary.withOpacity(0.3),
+                        width: 2,
+                      ),
+                    ),
+                    child: Icon(
+                      Icons.agriculture_rounded,
+                      size: 64,
+                      color: cs.onPrimary,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 32),
+                // Title
+                FadeTransition(
+                  opacity: _fadeAnim,
+                  child: Text(
+                    'Unión Ganadera',
+                    style: TextStyle(
+                      fontSize: 34,
+                      fontWeight: FontWeight.w800,
+                      color: cs.onPrimary,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                FadeTransition(
+                  opacity: _fadeAnim,
+                  child: Text(
+                    'Sistema de Gestión de Ganado',
+                    style: TextStyle(
+                      fontSize: 15,
+                      color: cs.onPrimary.withOpacity(0.75),
+                      fontWeight: FontWeight.w400,
+                      letterSpacing: 0.3,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 64),
+                // Loading indicator
+                SizedBox(
+                  width: 32,
+                  height: 32,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 3,
+                    color: cs.onPrimary.withOpacity(0.8),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 8),
-            const Text(
-              'Sistema de Gestión de Ganado',
-              style: TextStyle(fontSize: 16, color: Colors.white70),
-            ),
-            const SizedBox(height: 48),
-            const CircularProgressIndicator(color: Colors.white),
-          ],
+          ),
         ),
       ),
     );

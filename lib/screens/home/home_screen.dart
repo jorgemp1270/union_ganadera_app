@@ -42,7 +42,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   List<Widget> _getScreens() {
     if (_currentUser?.rol == 'veterinario') {
-      // Veterinarian screens - includes normal user screens plus vet events
       return const [
         CattleListScreen(),
         PrediosScreen(),
@@ -50,7 +49,6 @@ class _HomeScreenState extends State<HomeScreen> {
         ProfileScreen(),
       ];
     } else {
-      // Regular user screens
       return const [CattleListScreen(), PrediosScreen(), ProfileScreen()];
     }
   }
@@ -58,87 +56,65 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(
+            color: Theme.of(context).colorScheme.primary,
+          ),
+        ),
+      );
     }
 
     final isVet = _currentUser?.rol == 'veterinario';
-    final primaryColor = isVet ? Colors.blue.shade700 : Colors.green.shade700;
+
+    final destinations =
+        isVet
+            ? const [
+              NavigationDestination(
+                icon: Icon(Icons.pets_outlined),
+                selectedIcon: Icon(Icons.pets),
+                label: 'Ganado',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.map_outlined),
+                selectedIcon: Icon(Icons.map),
+                label: 'Predios',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.medical_services_outlined),
+                selectedIcon: Icon(Icons.medical_services),
+                label: 'Vet.',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.person_outline_rounded),
+                selectedIcon: Icon(Icons.person_rounded),
+                label: 'Perfil',
+              ),
+            ]
+            : const [
+              NavigationDestination(
+                icon: Icon(Icons.pets_outlined),
+                selectedIcon: Icon(Icons.pets),
+                label: 'Ganado',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.map_outlined),
+                selectedIcon: Icon(Icons.map),
+                label: 'Predios',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.person_outline_rounded),
+                selectedIcon: Icon(Icons.person_rounded),
+                label: 'Perfil',
+              ),
+            ];
 
     return Scaffold(
       body: _getScreens()[_currentIndex],
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
-        onDestinationSelected: (index) => setState(() => _currentIndex = index),
-        backgroundColor: Colors.white,
-        indicatorColor: primaryColor.withOpacity(0.2),
-        surfaceTintColor: Colors.white,
-        elevation: 3,
-        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-        destinations:
-            isVet
-                ? [
-                  NavigationDestination(
-                    icon: Icon(
-                      Icons.pets_outlined,
-                      color: Colors.grey.shade600,
-                    ),
-                    selectedIcon: Icon(Icons.pets, color: primaryColor),
-                    label: 'Ganado',
-                  ),
-                  NavigationDestination(
-                    icon: Icon(
-                      Icons.location_on_outlined,
-                      color: Colors.grey.shade600,
-                    ),
-                    selectedIcon: Icon(Icons.location_on, color: primaryColor),
-                    label: 'Predios',
-                  ),
-                  NavigationDestination(
-                    icon: Icon(
-                      Icons.medical_services_outlined,
-                      color: Colors.grey.shade600,
-                    ),
-                    selectedIcon: Icon(
-                      Icons.medical_services,
-                      color: primaryColor,
-                    ),
-                    label: 'Eventos Vet.',
-                  ),
-                  NavigationDestination(
-                    icon: Icon(
-                      Icons.person_outline,
-                      color: Colors.grey.shade600,
-                    ),
-                    selectedIcon: Icon(Icons.person, color: primaryColor),
-                    label: 'Perfil',
-                  ),
-                ]
-                : [
-                  NavigationDestination(
-                    icon: Icon(
-                      Icons.pets_outlined,
-                      color: Colors.grey.shade600,
-                    ),
-                    selectedIcon: Icon(Icons.pets, color: primaryColor),
-                    label: 'Ganado',
-                  ),
-                  NavigationDestination(
-                    icon: Icon(
-                      Icons.location_on_outlined,
-                      color: Colors.grey.shade600,
-                    ),
-                    selectedIcon: Icon(Icons.location_on, color: primaryColor),
-                    label: 'Predios',
-                  ),
-                  NavigationDestination(
-                    icon: Icon(
-                      Icons.person_outline,
-                      color: Colors.grey.shade600,
-                    ),
-                    selectedIcon: Icon(Icons.person, color: primaryColor),
-                    label: 'Perfil',
-                  ),
-                ],
+        onDestinationSelected: (i) => setState(() => _currentIndex = i),
+        destinations: destinations,
       ),
     );
   }
