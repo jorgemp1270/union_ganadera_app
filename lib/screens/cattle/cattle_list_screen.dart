@@ -122,25 +122,33 @@ class _CattleListScreenState extends State<CattleListScreen> {
           preferredSize: const Size.fromHeight(56),
           child: Padding(
             padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
-            child: TextField(
-              decoration: InputDecoration(
-                hintText: 'Buscar por arete o raza...',
-                prefixIcon: const Icon(Icons.search_rounded),
-                fillColor: Colors.white.withOpacity(0.18),
-                filled: true,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: BorderSide.none,
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: BorderSide.none,
-                ),
-                hintStyle: const TextStyle(color: Colors.white70),
-                prefixIconColor: Colors.white70,
-              ),
-              style: const TextStyle(color: Colors.white),
-              onChanged: (value) => setState(() => _searchQuery = value),
+            child: Builder(
+              builder: (context) {
+                final cs = Theme.of(context).colorScheme;
+                return TextField(
+                  decoration: InputDecoration(
+                    hintText: 'Buscar por arete o raza...',
+                    prefixIcon: Icon(
+                      Icons.search_rounded,
+                      color: cs.onSurfaceVariant,
+                    ),
+                    fillColor: cs.surfaceContainerHigh,
+                    filled: true,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide.none,
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide.none,
+                    ),
+                    hintStyle: TextStyle(color: cs.onSurfaceVariant),
+                    contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                  ),
+                  style: TextStyle(color: cs.onSurface),
+                  onChanged: (value) => setState(() => _searchQuery = value),
+                );
+              },
             ),
           ),
         ),

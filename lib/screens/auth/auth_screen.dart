@@ -42,7 +42,7 @@ class _AuthScreenState extends State<AuthScreen>
     final cs = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: ModernAppBar(
-        title: 'Unión Ganadera',
+        title: 'MUU-NITOREO',
         actions: [
           IconButton(
             icon: const Icon(Icons.settings_outlined),
@@ -55,16 +55,41 @@ class _AuthScreenState extends State<AuthScreen>
             },
           ),
         ],
-        bottom: TabBar(
-          controller: _tabController,
-          indicatorColor: cs.onPrimary,
-          labelColor: cs.onPrimary,
-          unselectedLabelColor: cs.onPrimary.withOpacity(0.65),
-          indicator: UnderlineTabIndicator(
-            borderSide: BorderSide(color: cs.onPrimary, width: 3),
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(3)),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(52),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: Container(
+              height: 44,
+              decoration: BoxDecoration(
+                color: cs.surfaceContainerHigh,
+                borderRadius: BorderRadius.circular(22),
+              ),
+              child: TabBar(
+                controller: _tabController,
+                indicator: BoxDecoration(
+                  color: cs.primary,
+                  borderRadius: BorderRadius.circular(22),
+                ),
+                indicatorSize: TabBarIndicatorSize.tab,
+                dividerColor: Colors.transparent,
+                labelColor: cs.onPrimary,
+                unselectedLabelColor: cs.onSurfaceVariant,
+                labelStyle: const TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 14,
+                ),
+                unselectedLabelStyle: const TextStyle(
+                  fontWeight: FontWeight.w500,
+                  fontSize: 14,
+                ),
+                tabs: const [
+                  Tab(text: 'Iniciar Sesión'),
+                  Tab(text: 'Registrarse'),
+                ],
+              ),
+            ),
           ),
-          tabs: const [Tab(text: 'Iniciar Sesión'), Tab(text: 'Registrarse')],
         ),
       ),
       body: TabBarView(

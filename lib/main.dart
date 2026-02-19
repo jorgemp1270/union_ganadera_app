@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:union_ganadera_app/screens/splash_screen.dart';
@@ -56,8 +57,9 @@ class MyApp extends StatelessWidget {
       colorScheme: colorScheme,
 
       // ── Typography ──────────────────────────────────────────────────────
-      textTheme: Typography.material2021().black.apply(
-        fontFamily: 'Roboto',
+      textTheme: GoogleFonts.nunitoTextTheme(
+        Typography.material2021().black,
+      ).apply(
         bodyColor: colorScheme.onSurface,
         displayColor: colorScheme.onSurface,
       ),
