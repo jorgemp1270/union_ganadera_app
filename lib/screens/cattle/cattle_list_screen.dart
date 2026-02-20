@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:union_ganadera_app/models/bovino.dart';
+import 'package:union_ganadera_app/models/predio.dart';
 import 'package:union_ganadera_app/screens/cattle/cattle_detail_screen.dart';
 import 'package:union_ganadera_app/screens/cattle/register_cattle_screen.dart';
 import 'package:union_ganadera_app/screens/events/register_event_screen.dart';
 import 'package:union_ganadera_app/services/api_client.dart';
 import 'package:union_ganadera_app/services/bovino_service.dart';
+import 'package:union_ganadera_app/services/predio_service.dart';
 import 'package:union_ganadera_app/utils/modern_app_bar.dart';
 
 class CattleListScreen extends StatefulWidget {
@@ -17,8 +19,9 @@ class CattleListScreen extends StatefulWidget {
 class _CattleListScreenState extends State<CattleListScreen> {
   final ApiClient _apiClient = ApiClient();
   late final BovinoService _bovinoService;
+  late final PredioService _predioService;
   List<Bovino> _bovinos = [];
-  Set<String> _selectedBovinoIds = {};
+  final Set<String> _selectedBovinoIds = {};
   bool _isLoading = true;
   bool _isSelectionMode = false;
   String _searchQuery = '';
@@ -27,6 +30,7 @@ class _CattleListScreenState extends State<CattleListScreen> {
   void initState() {
     super.initState();
     _bovinoService = BovinoService(_apiClient);
+    _predioService = PredioService(_apiClient);
     _loadBovinos();
   }
 
@@ -70,89 +74,105 @@ class _CattleListScreenState extends State<CattleListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Scaffold(
-      appBar: ModernAppBar(
-        title:
-            _isSelectionMode
-                ? '${_selectedBovinoIds.length} seleccionados'
-                : 'Mi Ganado',
-        leading:
-            _isSelectionMode
-                ? IconButton(
-                  icon: const Icon(Icons.close),
+      appBar:
+          _isSelectionMode
+              ? AppBar(
+                backgroundColor: cs.primaryContainer,
+                foregroundColor: cs.onPrimaryContainer,
+                leading: IconButton(
+                  icon: const Icon(Icons.close_rounded),
                   onPressed: () {
                     setState(() {
                       _isSelectionMode = false;
                       _selectedBovinoIds.clear();
                     });
                   },
-                )
-                : null,
-        actions:
-            _isSelectionMode
-                ? [
-                  if (_selectedBovinoIds.isNotEmpty)
-                    IconButton(
-                      icon: const Icon(Icons.event_note_outlined),
-                      tooltip: 'Registrar Evento',
-                      onPressed: () {
-                        final selectedBovinos =
-                            _bovinos
-                                .where((b) => _selectedBovinoIds.contains(b.id))
-                                .toList();
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder:
-                                (_) => RegisterEventScreen(
-                                  bovinos: selectedBovinos,
-                                ),
+                ),
+                title: Text(
+                  '${_selectedBovinoIds.length} seleccionados',
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+                actions:
+                    _selectedBovinoIds.isNotEmpty
+                        ? [
+                          IconButton(
+                            icon: const Icon(Icons.location_on_outlined),
+                            tooltip: 'Asignar a Predio',
+                            onPressed: _showAssignPredioSheet,
                           ),
-                        ).then((_) {
-                          setState(() {
-                            _isSelectionMode = false;
-                            _selectedBovinoIds.clear();
-                          });
-                        });
+                          IconButton(
+                            icon: const Icon(Icons.event_note_outlined),
+                            tooltip: 'Registrar Evento',
+                            onPressed: () {
+                              final selectedBovinos =
+                                  _bovinos
+                                      .where(
+                                        (b) =>
+                                            _selectedBovinoIds.contains(b.id),
+                                      )
+                                      .toList();
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder:
+                                      (_) => RegisterEventScreen(
+                                        bovinos: selectedBovinos,
+                                      ),
+                                ),
+                              ).then((_) {
+                                setState(() {
+                                  _isSelectionMode = false;
+                                  _selectedBovinoIds.clear();
+                                });
+                              });
+                            },
+                          ),
+                          const SizedBox(width: 4),
+                        ]
+                        : null,
+              )
+              : ModernAppBar(
+                title: 'Mi Ganado',
+                bottom: PreferredSize(
+                  preferredSize: const Size.fromHeight(56),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+                    child: Builder(
+                      builder: (context) {
+                        final cs = Theme.of(context).colorScheme;
+                        return TextField(
+                          decoration: InputDecoration(
+                            hintText: 'Buscar por arete o raza...',
+                            prefixIcon: Icon(
+                              Icons.search_rounded,
+                              color: cs.onSurfaceVariant,
+                            ),
+                            fillColor: cs.surfaceContainerHigh,
+                            filled: true,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide: BorderSide.none,
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide: BorderSide.none,
+                            ),
+                            hintStyle: TextStyle(color: cs.onSurfaceVariant),
+                            contentPadding: const EdgeInsets.symmetric(
+                              vertical: 0,
+                            ),
+                          ),
+                          style: TextStyle(color: cs.onSurface),
+                          onChanged:
+                              (value) => setState(() => _searchQuery = value),
+                        );
                       },
                     ),
-                ]
-                : null,
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(56),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
-            child: Builder(
-              builder: (context) {
-                final cs = Theme.of(context).colorScheme;
-                return TextField(
-                  decoration: InputDecoration(
-                    hintText: 'Buscar por arete o raza...',
-                    prefixIcon: Icon(
-                      Icons.search_rounded,
-                      color: cs.onSurfaceVariant,
-                    ),
-                    fillColor: cs.surfaceContainerHigh,
-                    filled: true,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
-                      borderSide: BorderSide.none,
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
-                      borderSide: BorderSide.none,
-                    ),
-                    hintStyle: TextStyle(color: cs.onSurfaceVariant),
-                    contentPadding: const EdgeInsets.symmetric(vertical: 0),
                   ),
-                  style: TextStyle(color: cs.onSurface),
-                  onChanged: (value) => setState(() => _searchQuery = value),
-                );
-              },
-            ),
-          ),
-        ),
-      ),
+                ),
+              ),
       body:
           _isLoading
               ? const Center(child: CircularProgressIndicator())
@@ -325,6 +345,146 @@ class _CattleListScreenState extends State<CattleListScreen> {
                 ],
               ),
     );
+  }
+
+  Future<void> _showAssignPredioSheet() async {
+    final List<Predio> predios;
+    try {
+      predios = await _predioService.getPredios();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error al cargar predios: $e')));
+      }
+      return;
+    }
+    if (!mounted) return;
+
+    await showModalBottomSheet(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (ctx) {
+        final cs = Theme.of(ctx).colorScheme;
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+                child: Text(
+                  'Asignar ${_selectedBovinoIds.length} bovino(s) a un predio',
+                  style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              if (predios.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Center(
+                    child: Text(
+                      'No tienes predios registrados',
+                      style: TextStyle(color: cs.onSurfaceVariant),
+                    ),
+                  ),
+                )
+              else
+                Flexible(
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: predios.length,
+                    itemBuilder: (ctx, index) {
+                      final predio = predios[index];
+                      return ListTile(
+                        leading: Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: cs.primaryContainer,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.landscape_rounded,
+                            color: cs.onPrimaryContainer,
+                            size: 20,
+                          ),
+                        ),
+                        title: Text(
+                          predio.claveCatastral ?? 'Sin clave catastral',
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                        subtitle:
+                            predio.superficieTotal != null
+                                ? Text(
+                                  '${predio.superficieTotal!.toStringAsFixed(1)} ha',
+                                )
+                                : null,
+                        onTap: () async {
+                          Navigator.pop(ctx);
+                          await _assignBovinosToPredio(predio.id);
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ListTile(
+                leading: Icon(Icons.block_rounded, color: cs.onSurfaceVariant),
+                title: Text(
+                  'Sin predio (desasignar)',
+                  style: TextStyle(color: cs.onSurfaceVariant),
+                ),
+                onTap: () async {
+                  Navigator.pop(ctx);
+                  await _assignBovinosToPredio(null);
+                },
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _assignBovinosToPredio(String? predioId) async {
+    final ids = _selectedBovinoIds.toList();
+    try {
+      await Future.wait(
+        ids.map(
+          (id) => _bovinoService.updateBovino(id, {'predio_id': predioId}),
+        ),
+      );
+      if (mounted) {
+        final label =
+            predioId != null
+                ? 'Asignados al predio'
+                : 'Desasignados del predio';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('$label (${ids.length} bovino(s))'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        setState(() {
+          _isSelectionMode = false;
+          _selectedBovinoIds.clear();
+        });
+        await _loadBovinos();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al asignar: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   Widget _buildEmptyState() {
