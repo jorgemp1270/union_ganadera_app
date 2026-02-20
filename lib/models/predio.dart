@@ -1,5 +1,6 @@
 class Predio {
   final String id;
+  final String? usuarioId;
   final String? domicilioId;
   final String? claveCatastral;
   final double? superficieTotal;
@@ -8,6 +9,7 @@ class Predio {
 
   Predio({
     required this.id,
+    this.usuarioId,
     this.domicilioId,
     this.claveCatastral,
     this.superficieTotal,
@@ -18,6 +20,7 @@ class Predio {
   factory Predio.fromJson(Map<String, dynamic> json) {
     return Predio(
       id: json['id'],
+      usuarioId: json['usuario_id'],
       domicilioId: json['domicilio_id'],
       claveCatastral: json['clave_catastral'],
       superficieTotal: json['superficie_total']?.toDouble(),

@@ -39,7 +39,8 @@ class DocumentFile {
 }
 
 enum DocType {
-  identificacion,
+  identificacionFrente,
+  identificacionReverso,
   comprobanteDomicilio,
   predio,
   cedulaVeterinario,
@@ -49,8 +50,10 @@ enum DocType {
 extension DocTypeExtension on DocType {
   String get value {
     switch (this) {
-      case DocType.identificacion:
-        return 'identificacion';
+      case DocType.identificacionFrente:
+        return 'identificacion_frente';
+      case DocType.identificacionReverso:
+        return 'identificacion_reverso';
       case DocType.comprobanteDomicilio:
         return 'comprobante_domicilio';
       case DocType.predio:
@@ -64,8 +67,10 @@ extension DocTypeExtension on DocType {
 
   String get displayName {
     switch (this) {
-      case DocType.identificacion:
-        return 'Identificación (INE)';
+      case DocType.identificacionFrente:
+        return 'INE — Frente';
+      case DocType.identificacionReverso:
+        return 'INE — Reverso';
       case DocType.comprobanteDomicilio:
         return 'Comprobante de Domicilio';
       case DocType.predio:

@@ -6,6 +6,7 @@ class Bovino {
   final String? areteBarcode;
   final String? areteRfid;
   final String? narizStorageKey;
+  final String? narizUrl;
   final String? madreId;
   final String? padreId;
   final String? predioId;
@@ -25,6 +26,7 @@ class Bovino {
     this.areteBarcode,
     this.areteRfid,
     this.narizStorageKey,
+    this.narizUrl,
     this.madreId,
     this.padreId,
     this.predioId,
@@ -46,6 +48,7 @@ class Bovino {
       areteBarcode: json['arete_barcode'],
       areteRfid: json['arete_rfid'],
       narizStorageKey: json['nariz_storage_key'],
+      narizUrl: json['nariz_url'],
       madreId: json['madre_id'],
       padreId: json['padre_id'],
       predioId: json['predio_id'],

@@ -35,8 +35,8 @@ class _SignupScreenState extends State<SignupScreen> {
   DateTime? _fechaNacimiento;
   String _sexo = 'M';
   String _userType = 'ganadero'; // 'ganadero' or 'veterinario'
-  File? _inePhoto;
-  File? _comprobanteDomicilioPhoto;
+  File? _ineFrontPhoto;
+  File? _ineBackPhoto;
   File? _cedulaFile;
   bool _isLoading = false;
   bool _obscurePassword = true;
@@ -76,10 +76,10 @@ class _SignupScreenState extends State<SignupScreen> {
 
     if (image != null) {
       setState(() {
-        if (type == 'ine') {
-          _inePhoto = File(image.path);
-        } else if (type == 'comprobante') {
-          _comprobanteDomicilioPhoto = File(image.path);
+        if (type == 'ine_frente') {
+          _ineFrontPhoto = File(image.path);
+        } else if (type == 'ine_reverso') {
+          _ineBackPhoto = File(image.path);
         } else if (type == 'cedula') {
           _cedulaFile = File(image.path);
         }
@@ -144,12 +144,10 @@ class _SignupScreenState extends State<SignupScreen> {
       return;
     }
 
-    if (_inePhoto == null || _comprobanteDomicilioPhoto == null) {
+    if (_ineFrontPhoto == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text(
-            'Debes tomar fotos de tu INE y comprobante de domicilio',
-          ),
+          content: Text('Debes tomar foto del frente de tu INE'),
           backgroundColor: Colors.red,
         ),
       );
@@ -209,14 +207,16 @@ class _SignupScreenState extends State<SignupScreen> {
 
       // 3. Upload INE and comprobante documents
       await _fileService.uploadFile(
-        file: _inePhoto!,
-        docType: DocType.identificacion,
+        file: _ineFrontPhoto!,
+        docType: DocType.identificacionFrente,
       );
 
-      await _fileService.uploadFile(
-        file: _comprobanteDomicilioPhoto!,
-        docType: DocType.comprobanteDomicilio,
-      );
+      if (_ineBackPhoto != null) {
+        await _fileService.uploadFile(
+          file: _ineBackPhoto!,
+          docType: DocType.identificacionReverso,
+        );
+      }
 
       if (!mounted) return;
 
@@ -617,35 +617,32 @@ class _SignupScreenState extends State<SignupScreen> {
           ),
           const SizedBox(height: 16),
           OutlinedButton.icon(
-            onPressed: () => _pickImage('ine'),
-            icon: Icon(_inePhoto == null ? Icons.camera_alt : Icons.check),
+            onPressed: () => _pickImage('ine_frente'),
+            icon: Icon(_ineFrontPhoto == null ? Icons.camera_alt : Icons.check),
             label: Text(
-              _inePhoto == null ? 'Tomar foto de INE' : 'Foto de INE capturada',
-            ),
-            style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.all(16),
-              foregroundColor: _inePhoto == null ? Colors.blue : Colors.green,
-            ),
-          ),
-          const SizedBox(height: 12),
-          OutlinedButton.icon(
-            onPressed: () => _pickImage('comprobante'),
-            icon: Icon(
-              _comprobanteDomicilioPhoto == null
-                  ? Icons.camera_alt
-                  : Icons.check,
-            ),
-            label: Text(
-              _comprobanteDomicilioPhoto == null
-                  ? 'Tomar foto de Comprobante de Domicilio'
-                  : 'Comprobante capturado',
+              _ineFrontPhoto == null
+                  ? 'Foto INE — Frente (requerido)'
+                  : 'INE Frente capturado ✓',
             ),
             style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.all(16),
               foregroundColor:
-                  _comprobanteDomicilioPhoto == null
-                      ? Colors.blue
-                      : Colors.green,
+                  _ineFrontPhoto == null ? Colors.blue : Colors.green,
+            ),
+          ),
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
+            onPressed: () => _pickImage('ine_reverso'),
+            icon: Icon(_ineBackPhoto == null ? Icons.camera_alt : Icons.check),
+            label: Text(
+              _ineBackPhoto == null
+                  ? 'Foto INE — Reverso (opcional)'
+                  : 'INE Reverso capturado ✓',
+            ),
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.all(16),
+              foregroundColor:
+                  _ineBackPhoto == null ? Colors.blue : Colors.green,
             ),
           ),
           const SizedBox(height: 24),

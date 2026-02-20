@@ -4,8 +4,10 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:nfc_manager/nfc_manager.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:union_ganadera_app/models/bovino.dart';
+import 'package:union_ganadera_app/models/predio.dart';
 import 'package:union_ganadera_app/services/api_client.dart';
 import 'package:union_ganadera_app/services/bovino_service.dart';
+import 'package:union_ganadera_app/services/predio_service.dart';
 import 'package:union_ganadera_app/utils/modern_app_bar.dart';
 
 class RegisterCattleScreen extends StatefulWidget {
@@ -36,9 +38,13 @@ class _RegisterCattleScreenState extends State<RegisterCattleScreen> {
   File? _nosePhoto;
   bool _isLoading = false;
   bool _nfcAvailable = false;
+  List<Predio> _predios = [];
+  String? _selectedPredioId;
+  bool _isLoadingPredios = false;
 
   final ApiClient _apiClient = ApiClient();
   late final BovinoService _bovinoService;
+  late final PredioService _predioService;
   final ImagePicker _imagePicker = ImagePicker();
   final _statusController = TextEditingController();
 
@@ -79,7 +85,21 @@ class _RegisterCattleScreenState extends State<RegisterCattleScreen> {
   void initState() {
     super.initState();
     _bovinoService = BovinoService(_apiClient);
+    _predioService = PredioService(_apiClient);
     _checkNfcAvailability();
+    _loadPredios();
+  }
+
+  Future<void> _loadPredios() async {
+    setState(() => _isLoadingPredios = true);
+    try {
+      final predios = await _predioService.getPredios();
+      if (mounted) setState(() => _predios = predios);
+    } catch (_) {
+      // Non-critical — form still works without predios loaded
+    } finally {
+      if (mounted) setState(() => _isLoadingPredios = false);
+    }
   }
 
   @override
@@ -154,6 +174,7 @@ class _RegisterCattleScreenState extends State<RegisterCattleScreen> {
         },
       );
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Error al leer NFC: $e')));
@@ -288,6 +309,7 @@ class _RegisterCattleScreenState extends State<RegisterCattleScreen> {
                 ? null
                 : double.tryParse(_pesoActualController.text.trim()),
         proposito: proposito,
+        predioId: _selectedPredioId,
         status: status,
       );
 
@@ -559,6 +581,47 @@ class _RegisterCattleScreenState extends State<RegisterCattleScreen> {
               ],
               const SizedBox(height: 24),
               const Text(
+                'Ubicación (Predio)',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              if (_isLoadingPredios)
+                const LinearProgressIndicator()
+              else
+                DropdownButtonFormField<String?>(
+                  value: _selectedPredioId,
+                  decoration: const InputDecoration(
+                    labelText: 'Predio (Opcional)',
+                    prefixIcon: Icon(Icons.landscape_rounded),
+                    border: OutlineInputBorder(),
+                  ),
+                  isExpanded: true,
+                  selectedItemBuilder:
+                      (context) => [
+                        const Text('Sin predio'),
+                        ..._predios.map(
+                          (p) => Text(
+                            p.claveCatastral ?? 'Sin clave catastral',
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                  items: [
+                    const DropdownMenuItem(
+                      value: null,
+                      child: Text('Sin predio'),
+                    ),
+                    ..._predios.map(
+                      (p) => DropdownMenuItem(
+                        value: p.id,
+                        child: _PredioDropdownItem(predio: p),
+                      ),
+                    ),
+                  ],
+                  onChanged: (v) => setState(() => _selectedPredioId = v),
+                ),
+              const SizedBox(height: 24),
+              const Text(
                 'Foto de la Nariz (Opcional)',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
@@ -645,6 +708,74 @@ class _RegisterCattleScreenState extends State<RegisterCattleScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _PredioDropdownItem extends StatelessWidget {
+  final Predio predio;
+
+  const _PredioDropdownItem({required this.predio});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final hasGps = predio.latitud != null && predio.longitud != null;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            predio.claveCatastral ?? 'Sin clave catastral',
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 14,
+              color: cs.onSurface,
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 2),
+          Row(
+            children: [
+              if (predio.superficieTotal != null) ...[
+                Icon(
+                  Icons.straighten_rounded,
+                  size: 12,
+                  color: cs.onSurfaceVariant,
+                ),
+                const SizedBox(width: 3),
+                Text(
+                  '${predio.superficieTotal!.toStringAsFixed(1)} ha',
+                  style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
+                ),
+                const SizedBox(width: 10),
+              ],
+              if (hasGps) ...[
+                Icon(
+                  Icons.location_on_rounded,
+                  size: 12,
+                  color: cs.onSurfaceVariant,
+                ),
+                const SizedBox(width: 3),
+                Flexible(
+                  child: Text(
+                    '${predio.latitud!.toStringAsFixed(4)}, '
+                    '${predio.longitud!.toStringAsFixed(4)}',
+                    style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ] else
+                Text(
+                  'Sin coordenadas GPS',
+                  style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
+                ),
+            ],
+          ),
+        ],
       ),
     );
   }

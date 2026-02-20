@@ -181,6 +181,7 @@ class _CattleDetailScreenState extends State<CattleDetailScreen> {
                     Container(
                       width: 96,
                       height: 96,
+                      clipBehavior: Clip.antiAlias,
                       decoration: BoxDecoration(
                         color: Colors.white.withOpacity(0.15),
                         shape: BoxShape.circle,
@@ -189,11 +190,27 @@ class _CattleDetailScreenState extends State<CattleDetailScreen> {
                           width: 2.5,
                         ),
                       ),
-                      child: Icon(
-                        isMale ? Icons.male_rounded : Icons.female_rounded,
-                        size: 56,
-                        color: Colors.white,
-                      ),
+                      child:
+                          widget.bovino.narizUrl != null
+                              ? Image.network(
+                                widget.bovino.narizUrl!,
+                                fit: BoxFit.cover,
+                                errorBuilder:
+                                    (_, __, ___) => Icon(
+                                      isMale
+                                          ? Icons.male_rounded
+                                          : Icons.female_rounded,
+                                      size: 56,
+                                      color: Colors.white,
+                                    ),
+                              )
+                              : Icon(
+                                isMale
+                                    ? Icons.male_rounded
+                                    : Icons.female_rounded,
+                                size: 56,
+                                color: Colors.white,
+                              ),
                     ),
                     const SizedBox(height: 14),
                     // Name
@@ -281,6 +298,14 @@ class _CattleDetailScreenState extends State<CattleDetailScreen> {
                       color: colorScheme.primary,
                     ),
                     const SizedBox(height: 10),
+                    // Nariz photo full-width card
+                    if (widget.bovino.narizUrl != null)
+                      _NarizPhotoCard(
+                        narizUrl: widget.bovino.narizUrl!,
+                        colorScheme: colorScheme,
+                      ),
+                    if (widget.bovino.narizUrl != null)
+                      const SizedBox(height: 10),
                     _buildInfoCards([
                       if (widget.bovino.areteBarcode != null)
                         _InfoCardData(
@@ -852,4 +877,139 @@ class _InfoCardData {
     required this.value,
     this.highlighted = false,
   });
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Nariz photo card — shown in identification section when nariz_url is present
+// ────────────────────────────────────────────────────────────────────────────
+
+class _NarizPhotoCard extends StatelessWidget {
+  final String narizUrl;
+  final ColorScheme colorScheme;
+
+  const _NarizPhotoCard({required this.narizUrl, required this.colorScheme});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => _showFullScreen(context),
+      child: Container(
+        height: 180,
+        width: double.infinity,
+        clipBehavior: Clip.antiAlias,
+        decoration: BoxDecoration(
+          color: colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            Image.network(
+              narizUrl,
+              fit: BoxFit.cover,
+              loadingBuilder: (_, child, progress) {
+                if (progress == null) return child;
+                return Center(
+                  child: CircularProgressIndicator(
+                    value:
+                        progress.expectedTotalBytes != null
+                            ? progress.cumulativeBytesLoaded /
+                                progress.expectedTotalBytes!
+                            : null,
+                    strokeWidth: 2,
+                  ),
+                );
+              },
+              errorBuilder:
+                  (_, __, ___) => Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.broken_image_outlined,
+                          size: 40,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'No se pudo cargar la imagen',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+            ),
+            // Label overlay
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.bottomCenter,
+                    end: Alignment.topCenter,
+                    colors: [Colors.black54, Colors.transparent],
+                  ),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.fingerprint, size: 14, color: Colors.white),
+                    SizedBox(width: 6),
+                    Text(
+                      'Foto Biom\u00e9trica \u2014 toca para ampliar',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showFullScreen(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder:
+            (_) => Scaffold(
+              backgroundColor: Colors.black,
+              appBar: AppBar(
+                backgroundColor: Colors.black,
+                foregroundColor: Colors.white,
+                title: const Text('Foto Biom\u00e9trica'),
+              ),
+              body: Center(
+                child: InteractiveViewer(
+                  child: Image.network(
+                    narizUrl,
+                    fit: BoxFit.contain,
+                    errorBuilder:
+                        (_, __, ___) => const Center(
+                          child: Icon(
+                            Icons.broken_image_outlined,
+                            size: 64,
+                            color: Colors.white54,
+                          ),
+                        ),
+                  ),
+                ),
+              ),
+            ),
+      ),
+    );
+  }
 }

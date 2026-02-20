@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:union_ganadera_app/models/bovino.dart';
 import 'package:union_ganadera_app/models/user.dart';
@@ -157,11 +156,7 @@ class _VetEventScreenState extends State<VetEventScreen> {
       MaterialPageRoute(
         builder:
             (context) => Scaffold(
-              appBar: AppBar(
-                title: const Text('Escanear Código de Barras'),
-                backgroundColor: Colors.blue.shade700,
-                foregroundColor: Colors.white,
-              ),
+              appBar: AppBar(title: const Text('Escanear Código de Barras')),
               body: MobileScanner(
                 onDetect: (capture) {
                   final List<Barcode> barcodes = capture.barcodes;
@@ -310,10 +305,7 @@ class _VetEventScreenState extends State<VetEventScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: const ModernAppBar(
-        title: 'Eventos Veterinarios',
-        backgroundColor: Colors.blue,
-      ),
+      appBar: const ModernAppBar(title: 'Eventos Veterinarios'),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
@@ -335,8 +327,8 @@ class _VetEventScreenState extends State<VetEventScreen> {
   }
 
   Widget _buildSearchSection() {
+    final cs = Theme.of(context).colorScheme;
     return Card(
-      elevation: 2,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Form(
@@ -346,11 +338,15 @@ class _VetEventScreenState extends State<VetEventScreen> {
             children: [
               Row(
                 children: [
-                  Icon(Icons.search, color: Colors.blue.shade700),
+                  Icon(Icons.search, color: cs.primary),
                   const SizedBox(width: 12),
-                  const Text(
+                  Text(
                     'Buscar Bovino',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: cs.onSurface,
+                    ),
                   ),
                 ],
               ),
@@ -372,7 +368,7 @@ class _VetEventScreenState extends State<VetEventScreen> {
                   IconButton(
                     onPressed: _scanBarcode,
                     icon: const Icon(Icons.camera_alt),
-                    color: Colors.blue.shade700,
+                    color: cs.primary,
                     iconSize: 32,
                   ),
                 ],
@@ -388,7 +384,7 @@ class _VetEventScreenState extends State<VetEventScreen> {
                 textCapitalization: TextCapitalization.characters,
               ),
               const SizedBox(height: 16),
-              ElevatedButton.icon(
+              FilledButton.icon(
                 onPressed: _isSearching ? null : _searchBovino,
                 icon:
                     _isSearching
@@ -402,10 +398,8 @@ class _VetEventScreenState extends State<VetEventScreen> {
                         )
                         : const Icon(Icons.search),
                 label: const Text('Buscar'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue.shade700,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size.fromHeight(48),
                 ),
               ),
             ],
@@ -417,10 +411,9 @@ class _VetEventScreenState extends State<VetEventScreen> {
 
   Widget _buildBovinoInfo() {
     if (_foundBovino == null) return const SizedBox.shrink();
-
+    final cs = Theme.of(context).colorScheme;
     return Card(
-      elevation: 2,
-      color: Colors.green.shade50,
+      color: cs.secondaryContainer,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -428,15 +421,22 @@ class _VetEventScreenState extends State<VetEventScreen> {
           children: [
             Row(
               children: [
-                Icon(Icons.check_circle, color: Colors.green.shade700),
+                Icon(Icons.check_circle, color: cs.secondary),
                 const SizedBox(width: 12),
-                const Text(
+                Text(
                   'Bovino Encontrado',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: cs.onSecondaryContainer,
+                  ),
                 ),
               ],
             ),
-            const Divider(height: 24),
+            Divider(
+              height: 24,
+              color: cs.onSecondaryContainer.withOpacity(0.2),
+            ),
             _buildInfoRow('Nombre', _foundBovino!.nombre ?? 'Sin nombre'),
             _buildInfoRow(
               'Código de Barras',
@@ -470,8 +470,8 @@ class _VetEventScreenState extends State<VetEventScreen> {
   }
 
   Widget _buildEventForm() {
+    final cs = Theme.of(context).colorScheme;
     return Card(
-      elevation: 2,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Form(
@@ -481,11 +481,15 @@ class _VetEventScreenState extends State<VetEventScreen> {
             children: [
               Row(
                 children: [
-                  Icon(Icons.event, color: Colors.blue.shade700),
+                  Icon(Icons.event, color: cs.primary),
                   const SizedBox(width: 12),
-                  const Text(
+                  Text(
                     'Registrar Evento',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: cs.onSurface,
+                    ),
                   ),
                 ],
               ),
@@ -532,14 +536,9 @@ class _VetEventScreenState extends State<VetEventScreen> {
                 maxLines: 3,
               ),
               const SizedBox(height: 24),
-              ElevatedButton(
+              FilledButton.icon(
                 onPressed: _isSubmitting ? null : _submitEvent,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green.shade700,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                ),
-                child:
+                icon:
                     _isSubmitting
                         ? const SizedBox(
                           height: 20,
@@ -549,7 +548,13 @@ class _VetEventScreenState extends State<VetEventScreen> {
                             color: Colors.white,
                           ),
                         )
-                        : const Text('Registrar Evento'),
+                        : const Icon(Icons.check_rounded),
+                label: Text(
+                  _isSubmitting ? 'Registrando...' : 'Registrar Evento',
+                ),
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size.fromHeight(52),
+                ),
               ),
             ],
           ),

@@ -8,17 +8,44 @@ class BovinoService {
 
   BovinoService(this.apiClient);
 
-  Future<List<Bovino>> getBovinos({int skip = 0, int limit = 100}) async {
+  Future<List<Bovino>> getBovinos({
+    int skip = 0,
+    int limit = 100,
+    String? predioId,
+  }) async {
     try {
+      final params = <String, dynamic>{'skip': skip, 'limit': limit};
+      if (predioId != null) params['predio_id'] = predioId;
       final response = await apiClient.dio.get(
         '/bovinos/',
-        queryParameters: {'skip': skip, 'limit': limit},
+        queryParameters: params,
       );
       return (response.data as List)
           .map((json) => Bovino.fromJson(json))
           .toList();
     } on DioException catch (e) {
       throw Exception('Error al obtener bovinos: ${e.message}');
+    }
+  }
+
+  Future<List<Bovino>> getBovinosByPredio(
+    String predioId, {
+    int skip = 0,
+    int limit = 100,
+  }) async {
+    try {
+      final response = await apiClient.dio.get(
+        '/predios/$predioId/bovinos',
+        queryParameters: {'skip': skip, 'limit': limit},
+      );
+      return (response.data as List)
+          .map((json) => Bovino.fromJson(json))
+          .toList();
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 403) {
+        throw Exception('No autorizado para ver el ganado de este predio');
+      }
+      throw Exception('Error al obtener ganado del predio: ${e.message}');
     }
   }
 

@@ -101,7 +101,7 @@ class _SplashScreenState extends State<SplashScreen>
                 FadeTransition(
                   opacity: _fadeAnim,
                   child: Text(
-                    'Unión Ganadera',
+                    'MUU-NITOREO',
                     style: TextStyle(
                       fontSize: 34,
                       fontWeight: FontWeight.w800,

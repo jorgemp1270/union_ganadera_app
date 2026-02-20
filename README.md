@@ -1,4 +1,4 @@
-# Unión Ganadera App
+# MUU-NITOREO (Unión Ganadera App)
 
 Aplicación móvil desarrollada en Flutter para la gestión integral de ganado, predios y eventos ganaderos de la Unión Ganadera.
 
@@ -10,7 +10,7 @@ Este proyecto es parte de un ecosistema más grande. Revisa los otros repositori
 
 ## 📋 Descripción
 
-Esta aplicación permite a los **ganaderos y veterinarios** registrar y gestionar su ganado, predios y eventos relacionados con la actividad ganadera. Incluye funcionalidades avanzadas como lectura de códigos de barras, NFC, captura de ubicación GPS, carga de documentos y una interfaz renovada con **Material 3 Expressive** y fuente **Nunito**.
+Esta aplicación permite a los **ganaderos y veterinarios** registrar y gestionar su ganado, predios y eventos relacionados con la actividad ganadera. Incluye funcionalidades avanzadas como lectura de códigos de barras, NFC, captura de ubicación GPS, carga de documentos, visualización de mapas y una interfaz renovada con **Material 3 Expressive** y fuente **Nunito**.
 
 <p align="center">
   <img src=".resources/img/1.png" width="30%" />
@@ -38,6 +38,7 @@ Esta aplicación permite a los **ganaderos y veterinarios** registrar y gestiona
 - Configuración de API personalizable (IP y puerto) desde el ícono de engranaje
 - Cierre de sesión automático ante respuestas 401 (no autenticado)
 - Validación de contraseña con límite de 72 caracteres
+- **Carga de INE al registro:** frente obligatorio y reverso opcional (los dos documentos separados — `identificacion_frente` / `identificacion_reverso`)
 
 ### Gestión de Ganado
 - **Registro de ganado:**
@@ -47,13 +48,17 @@ Esta aplicación permite a los **ganaderos y veterinarios** registrar y gestiona
   - Selección de propósito mediante botones (6 opciones + "Otro")
   - Selección de status mediante botones (7 opciones + "Otro")
   - Campos para identificación de madre, padre y predio de origen
+  - **Selector de predio:** dropdown con clave catastral, superfície y coordenadas GPS del predio
 - **Consulta de ganado:**
   - Vista detallada con diseño de cuadrícula organizada
   - Información estructurada en bloques: Identificación, Información General, Datos de Peso
   - Encabezado con gradiente y badge de status
+  - **Avatar biométrico:** muestra la foto de nariz desde `nariz_url` si está disponible; cae al ícono de género si no
+  - **Tarjeta de foto biométrica:** imagen a ancho completo con gradiente de acción — toca para ampliar en pantalla completa con `InteractiveViewer`
 - **Edición de ganado:**
   - Botón flotante de edición en la vista detallada
   - Interfaz idéntica al registro con datos pre-cargados
+  - **Selector de predio en edición:** permite asignar o cambiar el predio del animal (incluye la opción "Sin predio")
 - **Selección múltiple:**
   - Mantén presionado cualquier animal para activar el modo de selección
   - Checkboxes para seleccionar múltiples animales
@@ -65,7 +70,10 @@ Esta aplicación permite a los **ganaderos y veterinarios** registrar y gestiona
 ### Gestión de Predios
 - Registro de predios con captura de ubicación GPS automática
 - Modal bottom sheet optimizado para móviles (reemplaza diálogos)
-- Carga de documentos (comprobante de propiedad, uso de suelo)
+- **Carga de documentos ampliada:** cámara, galería de fotos _y_ selector de archivos (PDF, etc.) vía `file_picker`
+- **Documento de comprobante vinculado al predio** usando el endpoint `POST /predios/{predio_id}/upload-document` (clave S3 con scope de predio)
+- Predios **directamente asociados al usuario** — ya no dependen de un domicilio
+- Navegación al detalle de cada predio al tocar el ítem en la lista
 - Lista y detalles de predios registrados
 - Manejo adaptativo de teclado en formularios
 
@@ -85,14 +93,20 @@ Los eventos disponibles dependen del **rol del usuario**:
 - `enfermedad` — Descripción y tratamiento aplicado
 - `tratamiento` — Medicamento, dosis y período
 
-El ID del veterinario se toma automáticamente de la sesión activa — no se solicita al usuario. Los veterinarios también pueden registrar eventos para ganado de terceros desde la pantalla **Eventos Veterinarios** (búsqueda por código de barras o RFID).
+El ID del veterinario se toma automáticamente de la sesión activa — no se solicita al usuario. Los veterinarios también pueden registrar eventos para ganado de terceros desde la pantalla **Eventos Veterinarios** (búsqueda por código de barras, RFID **o nombre**).
 
 - Registro individual o masivo (selección múltiple)
 - Historial completo de eventos agrupados por tipo
+- **Pantalla Eventos Veterinarios renovada:** colores adaptativos via `ColorScheme`, botones `FilledButton`, tarjetas sin elevación fija
 
 ### Perfil de Usuario
 - Visualización de datos personales
-- Carga de documentos (INE frontal/trasera, comprobante de domicilio)
+- **Gestión de domicilio:** registro y edición de domicilio (`calle`, `colonia`, `C.P.`, `municipio`, `estado`) desde un bottom sheet — sin necesidad de salir de la pantalla de perfil
+- **Comprobante de domicilio vinculado al domicilio** (`POST /domicilios/{domicilio_id}/upload-document`) con selector de cámara / galería / archivo
+- **Carga de documentos de identificación:** INE Frente (obligatorio) y INE Reverso (opcional) — tipos `identificacion_frente` / `identificacion_reverso`
+- **Lista de documentos mejorada:** cada documento muestra botones de acción para **ver** (visor en app para imágenes; abre en navegador externo para PDFs con `url_launcher`) y **eliminar** (confirma con diálogo antes de llamar `DELETE /files/{doc_id}`)
+- **Checklist de documentos requeridos:** indicador visual del estado de carga de INE Frente, INE Reverso y Comprobante de Domicilio
+- Selector de fuente de archivo como **bottom sheet** (reemplaza alertDialog) con opciones: cámara, galería y selector de archivos PDF
 - Botón de cierre de sesión destacado
 - Configuración de la aplicación
 
@@ -158,8 +172,8 @@ La aplicación requiere los siguientes permisos:
 - ACCESS_FINE_LOCATION (GPS para predios)
 - ACCESS_COARSE_LOCATION
 - NFC (lectura de tags NFC)
-- READ_EXTERNAL_STORAGE (carga de documentos)
-- WRITE_EXTERNAL_STORAGE
+- READ_MEDIA_IMAGES (carga de documentos)
+- Queries de intent `http`/`https` para `url_launcher` (Android 11+)
 
 **iOS** (configurados en `ios/Runner/Info.plist`):
 - NSCameraUsageDescription (cámara para fotos de nariz y documentos)
@@ -233,7 +247,8 @@ flutter run -d <device_id>
    - Completa todos los campos requeridos
    - Ingresa CURP en mayúsculas (el campo formatea automáticamente)
    - Usa una contraseña de máximo 72 caracteres
-   - Valida con INE y CURP
+   - Captura la **foto del frente de tu INE** (obligatorio)
+   - Opcionalmente, captura también el **reverso de la INE**
    - Envía el registro
 
 3. **Inicio de sesión:**
@@ -250,8 +265,9 @@ flutter run -d <device_id>
    - Selecciona raza dominante (8 opciones predefinidas o "Otro" para ingresar manualmente)
    - Selecciona propósito (6 opciones predefinidas o "Otro")
    - Selecciona status (7 opciones predefinidas o "Otro")
+   - **Selecciona el predio** al que pertenece el animal (opcional — dropdown con clave catastral y GPS)
    - Captura foto de la nariz del animal (cámara o galería)
-   - Completa campos adicionales (madre, padre, predio)
+   - Completa campos adicionales (madre, padre)
    - Guarda el registro
 
 2. **Consultar ganado:**
@@ -279,13 +295,14 @@ flutter run -d <device_id>
    - Accede a "Predios" desde el menú
    - Presiona "Registrar Predio"
    - Se abrirá un modal optimizado para móviles
-   - Completa nombre y ubicación (GPS captura automáticamente)
-   - Sube documentos requeridos (propiedad y uso de suelo)
+   - Completa clave catastral y superficio (GPS captura coordenadas automáticamente)
+   - Sube el documento de propiedad (elige entre cámara, galería o selector de archivos PDF)
+   - El documento queda vinculado al predio con scope propio en S3
    - Guarda el predio
 
 2. **Consultar predios:**
    - Lista todos los predios registrados
-   - Toca un predio para ver detalles y documentos
+   - **Toca un predio** para navegar a su pantalla de detalle con documentos y ganado asociado
 
 ### Registro de Eventos
 1. **Evento individual:**
@@ -301,7 +318,7 @@ flutter run -d <device_id>
 
 3. **Veterinarios — eventos para ganado de terceros:**
    - Desde el menú principal ve a **"Eventos Veterinarios"**
-   - Busca el animal por código de barras o RFID (con opción de escanear cámara)
+   - Busca el animal por **código de barras, RFID o nombre** (con opción de escanear cámara)
    - Selecciona y completa el tipo de evento veterinario
    - El ID del veterinario se asigna automáticamente
 
@@ -312,36 +329,40 @@ lib/
 ├── main.dart                           # Punto de entrada con navegación global
 ├── models/                             # Modelos de datos
 │   ├── user.dart                       # Usuario con validación de CURP
-│   ├── bovino.dart                     # Ganado con campos extendidos
-│   ├── predio.dart                     # Predios con GPS
+│   ├── bovino.dart                     # Ganado con campos extendidos (nariz_url)
+│   ├── predio.dart                     # Predios con GPS y usuario_id
+│   ├── domicilio.dart                  # Domicilio del usuario
+│   ├── document_file.dart              # Documentos con DocType actualizado (frente/reverso)
 │   └── evento.dart                     # 9 tipos de eventos (incluyendo PesoEvento)
 ├── services/                           # Servicios de API y lógica de negocio
 │   ├── api_client.dart                 # Cliente Dio con interceptores JWT y manejo 401
 │   ├── auth_service.dart               # Autenticación y registro
-│   ├── bovino_service.dart             # CRUD de ganado + upload de foto nariz
-│   ├── predio_service.dart             # CRUD de predios
+│   ├── bovino_service.dart             # CRUD de ganado + filtro por predio + upload foto nariz
+│   ├── predio_service.dart             # CRUD de predios + upload documento de predio
+│   ├── domicilio_service.dart          # CRUD de domicilios + upload comprobante
 │   ├── evento_service.dart             # Registro de eventos por tipo
-│   └── file_service.dart               # Carga de documentos multipart
+│   └── file_service.dart               # Carga, eliminación y consulta de documentos multipart
 ├── screens/
-│   ├── splash_screen.dart              # Splash animado (escala + fade)
+│   ├── splash_screen.dart              # Splash animado con nombre MUU-NITOREO
 │   ├── auth/
 │   │   ├── auth_screen.dart            # Tabs segmentados Login/Signup
 │   │   ├── login_screen.dart           # Formulario de inicio de sesión
-│   │   └── signup_screen.dart          # Formulario de registro
+│   │   └── signup_screen.dart          # Registro con INE Frente (req) + Reverso (opt)
 │   ├── home/
 │   │   └── home_screen.dart            # NavigationBar M3 con 4 destinos
 │   ├── cattle/
 │   │   ├── cattle_list_screen.dart     # Lista + selección múltiple + buscador
-│   │   ├── register_cattle_screen.dart # Registro con button groups y foto nariz
-│   │   ├── edit_cattle_screen.dart     # Edición con datos pre-cargados
-│   │   └── cattle_detail_screen.dart   # Vista grid responsiva + historial de eventos
+│   │   ├── register_cattle_screen.dart # Registro con selector de predio y foto nariz
+│   │   ├── edit_cattle_screen.dart     # Edición con selector de predio y datos pre-cargados
+│   │   └── cattle_detail_screen.dart   # Vista grid + foto biométrica + historial de eventos
 │   ├── predios/
-│   │   └── predios_screen.dart         # Lista + bottom sheet de registro con GPS
+│   │   ├── predios_screen.dart         # Lista + bottom sheet de registro + selector archivos
+│   │   └── predio_detail_screen.dart   # Detalle del predio con documentos y ganado
 │   ├── events/
 │   │   ├── register_event_screen.dart  # Eventos propios (tipos según rol)
-│   │   └── vet_event_screen.dart       # Búsqueda de bovino + eventos veterinarios
+│   │   └── vet_event_screen.dart       # Búsqueda (barcode/RFID/nombre) + eventos vet.
 │   ├── profile/
-│   │   └── profile_screen.dart         # Perfil con carga de documentos
+│   │   └── profile_screen.dart         # Perfil con domicilio, checklist docs y visor de archivos
 │   └── settings/
 │       └── api_settings_screen.dart    # Configuración de IP/Puerto API
 └── utils/
@@ -357,13 +378,16 @@ lib/
 | `flutter_secure_storage` | ^9.0.0 | Tokens y credenciales cifrados |
 | `google_fonts` | ^6.2.1 | Tipografía en todo el tema |
 | `image_picker` | ^1.0.7 | Fotos de nariz y documentos |
-| `file_picker` | ^10.3.8 | Selección de archivos para documentos |
+| `file_picker` | ^10.3.8 | Selección de archivos para documentos (PDF, imágenes) |
 | `geolocator` | ^11.0.0 | Coordenadas GPS para predios |
 | `permission_handler` | ^11.2.0 | Permisos en runtime |
 | `mobile_scanner` | ^3.5.5 | Lectura de códigos de barras |
 | `nfc_manager` | ^3.3.0 | Lectura de tags NFC |
 | `provider` | ^6.1.1 | Gestión de estado global |
 | `intl` | ^0.19.0 | Formateo de fechas |
+| `url_launcher` | ^6.2.6 | Apertura de URLs y documentos en navegador externo |
+| `flutter_map` | ^7.0.2 | Mapas OpenStreetMap integrados en la app |
+| `latlong2` | ^0.9.1 | Tipos de coordenadas geográficas para `flutter_map` |
 
 ### Patrones y Arquitectura
 - **Autenticación:** JWT con manejo global de errores 401 via interceptor Dio

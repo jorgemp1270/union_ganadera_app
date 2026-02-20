@@ -1,13 +1,14 @@
 import 'dart:io';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:union_ganadera_app/models/document_file.dart';
 import 'package:union_ganadera_app/models/predio.dart';
 import 'package:union_ganadera_app/services/api_client.dart';
 import 'package:union_ganadera_app/services/file_service.dart';
 import 'package:union_ganadera_app/services/predio_service.dart';
+import 'package:union_ganadera_app/screens/predios/predio_detail_screen.dart';
 import 'package:union_ganadera_app/utils/modern_app_bar.dart';
 
 class PrediosScreen extends StatefulWidget {
@@ -70,7 +71,14 @@ class _PrediosScreenState extends State<PrediosScreen> {
                     return Card(
                       child: InkWell(
                         borderRadius: BorderRadius.circular(16),
-                        onTap: () {},
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder:
+                                  (_) => PredioDetailScreen(predio: predio),
+                            ),
+                          );
+                        },
                         child: Padding(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 14,
@@ -152,6 +160,7 @@ class _PrediosScreenState extends State<PrediosScreen> {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
+      showDragHandle: false,
       builder:
           (context) => _RegisterPredioDialog(
             predioService: _predioService,
@@ -273,14 +282,58 @@ class _RegisterPredioDialogState extends State<_RegisterPredioDialog> {
   }
 
   Future<void> _pickDocument() async {
-    final XFile? image = await _picker.pickImage(
-      source: ImageSource.camera,
-      imageQuality: 85,
+    await showModalBottomSheet(
+      context: context,
+      builder:
+          (ctx) => SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.camera_alt_outlined),
+                  title: const Text('Tomar foto'),
+                  onTap: () async {
+                    Navigator.pop(ctx);
+                    final XFile? img = await _picker.pickImage(
+                      source: ImageSource.camera,
+                      imageQuality: 85,
+                    );
+                    if (img != null) {
+                      setState(() => _documentFile = File(img.path));
+                    }
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.photo_library_outlined),
+                  title: const Text('Galería'),
+                  onTap: () async {
+                    Navigator.pop(ctx);
+                    final XFile? img = await _picker.pickImage(
+                      source: ImageSource.gallery,
+                      imageQuality: 85,
+                    );
+                    if (img != null) {
+                      setState(() => _documentFile = File(img.path));
+                    }
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.attach_file_rounded),
+                  title: const Text('Seleccionar archivo (PDF, etc.)'),
+                  onTap: () async {
+                    Navigator.pop(ctx);
+                    final result = await FilePicker.platform.pickFiles();
+                    if (result != null && result.files.single.path != null) {
+                      setState(
+                        () => _documentFile = File(result.files.single.path!),
+                      );
+                    }
+                  },
+                ),
+              ],
+            ),
+          ),
     );
-
-    if (image != null) {
-      setState(() => _documentFile = File(image.path));
-    }
   }
 
   Future<void> _handleSubmit() async {
@@ -307,7 +360,7 @@ class _RegisterPredioDialogState extends State<_RegisterPredioDialog> {
     setState(() => _isLoading = true);
 
     try {
-      // 1. Create predio
+      // 1. Create predio — capture the returned object to get its ID
       final predio = Predio(
         id: '',
         claveCatastral: _claveCatastralController.text.trim(),
@@ -318,12 +371,12 @@ class _RegisterPredioDialogState extends State<_RegisterPredioDialog> {
         longitud: _currentPosition!.longitude,
       );
 
-      await widget.predioService.createPredio(predio);
+      final createdPredio = await widget.predioService.createPredio(predio);
 
-      // 2. Upload document
-      await _fileService.uploadFile(
+      // 2. Upload comprobante scoped to the new predio
+      await _fileService.uploadPredioDocument(
+        predioId: createdPredio.id,
         file: _documentFile!,
-        docType: DocType.predio,
       );
 
       if (!mounted) return;
