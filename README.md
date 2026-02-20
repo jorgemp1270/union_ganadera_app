@@ -49,16 +49,21 @@ Esta aplicación permite a los **ganaderos y veterinarios** registrar y gestiona
   - Selección de status mediante botones (7 opciones + "Otro")
   - Campos para identificación de madre, padre y predio de origen
   - **Selector de predio:** dropdown con clave catastral, superfície y coordenadas GPS del predio
+  - **Sección Genealogía:** dropdowns para seleccionar **madre** (hembras) y **padre** (machos) del padrón de bovinos del usuario
 - **Consulta de ganado:**
   - Vista detallada con diseño de cuadrícula organizada
   - Información estructurada en bloques: Identificación, Información General, Datos de Peso
   - Encabezado con gradiente y badge de status
   - **Avatar biométrico:** muestra la foto de nariz desde `nariz_url` si está disponible; cae al ícono de género si no
   - **Tarjeta de foto biométrica:** imagen a ancho completo con gradiente de acción — toca para ampliar en pantalla completa con `InteractiveViewer`
+  - **Folio:** mostrado con destacado visual en la sección de Identificación cuando está disponible
+  - **Sección Genealogía:** tarjetas de madre y padre (toca para navegar al detalle del progenitor)
+  - **Chip de estatus con color:** en la lista de ganado, el estatus se muestra con código de color — verde (`activo`), naranja (`en tratamiento`), rojo (`muerto`), gris (`inactivo` / otros)
 - **Edición de ganado:**
   - Botón flotante de edición en la vista detallada
   - Interfaz idéntica al registro con datos pre-cargados
   - **Selector de predio en edición:** permite asignar o cambiar el predio del animal (incluye la opción "Sin predio")
+  - **Sección Genealogía en edición:** madre y padre pre-cargados desde el bovino existente
 - **Selección múltiple:**
   - Mantén presionado cualquier animal para activar el modo de selección
   - Checkboxes para seleccionar múltiples animales
@@ -66,6 +71,7 @@ Esta aplicación permite a los **ganaderos y veterinarios** registrar y gestiona
 - **Historial de eventos:**
   - Visualización en línea de tiempo por tipo de evento
   - Detalles de peso mostrando peso nuevo y peso anterior
+  - **Tratamientos vinculados a enfermedad:** si un tratamiento está ligado a un evento de enfermedad, se muestra una tarjeta expandida con el tipo de enfermedad, fecha de detección y observaciones en estilo destacado naranja
 
 ### Gestión de Predios
 - Registro de predios con captura de ubicación GPS automática
@@ -90,8 +96,8 @@ Los eventos disponibles dependen del **rol del usuario**:
 - `vacunacion` — Tipo, lote, laboratorio y fecha próxima
 - `desparasitacion` — Medicamento, dosis y fecha próxima
 - `laboratorio` — Tipo de análisis y resultado
-- `enfermedad` — Descripción y tratamiento aplicado
-- `tratamiento` — Medicamento, dosis y período
+- `enfermedad` — Tipo de enfermedad y observaciones; establece automáticamente el estatus del bovino a `enfermo`
+- `tratamiento` — Medicamento, dosis y período; **dropdown opcional para vincular a un evento de enfermedad existente** del mismo bovino (solo registro individual)
 
 El ID del veterinario se toma automáticamente de la sesión activa — no se solicita al usuario. Los veterinarios también pueden registrar eventos para ganado de terceros desde la pantalla **Eventos Veterinarios** (búsqueda por código de barras, RFID **o nombre**).
 
@@ -104,6 +110,7 @@ El ID del veterinario se toma automáticamente de la sesión activa — no se so
 - **Gestión de domicilio:** registro y edición de domicilio (`calle`, `colonia`, `C.P.`, `municipio`, `estado`) desde un bottom sheet — sin necesidad de salir de la pantalla de perfil
 - **Comprobante de domicilio vinculado al domicilio** (`POST /domicilios/{domicilio_id}/upload-document`) con selector de cámara / galería / archivo
 - **Carga de documentos de identificación:** INE Frente (obligatorio) y INE Reverso (opcional) — tipos `identificacion_frente` / `identificacion_reverso`
+- **Carga de Fierro de Herrar:** sección dedicada para agregar una o más imágenes del fierro de herrar del ganadero (tipo `fierro`); botón para añadir imágenes de la cola y botón de subida masiva
 - **Lista de documentos mejorada:** cada documento muestra botones de acción para **ver** (visor en app para imágenes; abre en navegador externo para PDFs con `url_launcher`) y **eliminar** (confirma con diálogo antes de llamar `DELETE /files/{doc_id}`)
 - **Checklist de documentos requeridos:** indicador visual del estado de carga de INE Frente, INE Reverso y Comprobante de Domicilio
 - Selector de fuente de archivo como **bottom sheet** (reemplaza alertDialog) con opciones: cámara, galería y selector de archivos PDF
@@ -332,8 +339,8 @@ lib/
 │   ├── bovino.dart                     # Ganado con campos extendidos (nariz_url)
 │   ├── predio.dart                     # Predios con GPS y usuario_id
 │   ├── domicilio.dart                  # Domicilio del usuario
-│   ├── document_file.dart              # Documentos con DocType actualizado (frente/reverso)
-│   └── evento.dart                     # 9 tipos de eventos (incluyendo PesoEvento)
+│   ├── document_file.dart              # Documentos con DocType actualizado (frente/reverso/fierro)
+│   └── evento.dart                     # 9 tipos de eventos (incluyendo PesoEvento, EnfermedadEvento con enfermedadId, TratamientoEvento con vínculo opcional a enfermedad)
 ├── services/                           # Servicios de API y lógica de negocio
 │   ├── api_client.dart                 # Cliente Dio con interceptores JWT y manejo 401
 │   ├── auth_service.dart               # Autenticación y registro
@@ -351,10 +358,10 @@ lib/
 │   ├── home/
 │   │   └── home_screen.dart            # NavigationBar M3 con 4 destinos
 │   ├── cattle/
-│   │   ├── cattle_list_screen.dart     # Lista + selección múltiple + buscador
-│   │   ├── register_cattle_screen.dart # Registro con selector de predio y foto nariz
-│   │   ├── edit_cattle_screen.dart     # Edición con selector de predio y datos pre-cargados
-│   │   └── cattle_detail_screen.dart   # Vista grid + foto biométrica + historial de eventos
+│   ├── cattle_list_screen.dart     # Lista + selección múltiple + buscador + chips de estatus con color
+│   ├── register_cattle_screen.dart # Registro con predio, foto nariz y Genealogía (madre/padre)
+│   ├── edit_cattle_screen.dart     # Edición con predio, datos pre-cargados y Genealogía
+│   └── cattle_detail_screen.dart   # Vista grid + folio + foto biométrica + Genealogía + historial de eventos con enfermedad vinculada
 │   ├── predios/
 │   │   ├── predios_screen.dart         # Lista + bottom sheet de registro + selector archivos
 │   │   └── predio_detail_screen.dart   # Detalle del predio con documentos y ganado
@@ -362,7 +369,7 @@ lib/
 │   │   ├── register_event_screen.dart  # Eventos propios (tipos según rol)
 │   │   └── vet_event_screen.dart       # Búsqueda (barcode/RFID/nombre) + eventos vet.
 │   ├── profile/
-│   │   └── profile_screen.dart         # Perfil con domicilio, checklist docs y visor de archivos
+│   │   └── profile_screen.dart         # Perfil con domicilio, INE, Fierro de Herrar, checklist docs y visor de archivos
 │   └── settings/
 │       └── api_settings_screen.dart    # Configuración de IP/Puerto API
 └── utils/

@@ -287,7 +287,7 @@ class EventoService {
 
   Future<Evento> createTratamientoEvent({
     required String bovinoId,
-    required String enfermedadId,
+    String? enfermedadId,
     required String veterinarioId,
     required String medicamento,
     required String dosis,
@@ -295,20 +295,18 @@ class EventoService {
     String? observaciones,
   }) async {
     try {
+      final data = <String, dynamic>{
+        'bovino_id': bovinoId,
+        'veterinario_id': veterinarioId,
+        'medicamento': medicamento,
+        'dosis': dosis,
+        'periodo': periodo,
+        'observaciones': observaciones ?? '',
+      };
+      if (enfermedadId != null) data['enfermedad_id'] = enfermedadId;
       final response = await apiClient.dio.post(
         '/eventos/',
-        data: {
-          'type': 'tratamiento',
-          'data': {
-            'bovino_id': bovinoId,
-            'enfermedad_id': enfermedadId,
-            'veterinario_id': veterinarioId,
-            'medicamento': medicamento,
-            'dosis': dosis,
-            'periodo': periodo,
-            'observaciones': observaciones ?? '',
-          },
-        },
+        data: {'type': 'tratamiento', 'data': data},
       );
       return Evento.fromJson(response.data);
     } on DioException catch (e) {

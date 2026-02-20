@@ -40,6 +40,10 @@ class _EditCattleScreenState extends State<EditCattleScreen> {
   List<Predio> _predios = [];
   String? _selectedPredioId;
   bool _isLoadingPredios = false;
+  List<Bovino> _allBovinos = [];
+  String? _selectedMadreId;
+  String? _selectedPadreId;
+  bool _isLoadingBovinos = false;
 
   final ApiClient _apiClient = ApiClient();
   late final BovinoService _bovinoService;
@@ -87,6 +91,7 @@ class _EditCattleScreenState extends State<EditCattleScreen> {
     _predioService = PredioService(_apiClient);
     _loadBovinoData();
     _loadPredios();
+    _loadBovinos();
   }
 
   Future<void> _loadPredios() async {
@@ -101,6 +106,18 @@ class _EditCattleScreenState extends State<EditCattleScreen> {
     }
   }
 
+  Future<void> _loadBovinos() async {
+    setState(() => _isLoadingBovinos = true);
+    try {
+      final bovinos = await _bovinoService.getBovinos();
+      if (mounted) setState(() => _allBovinos = bovinos);
+    } catch (_) {
+      // Non-critical
+    } finally {
+      if (mounted) setState(() => _isLoadingBovinos = false);
+    }
+  }
+
   void _loadBovinoData() {
     _nombreController.text = widget.bovino.nombre ?? '';
     _areteBarcodeController.text = widget.bovino.areteBarcode ?? '';
@@ -110,6 +127,8 @@ class _EditCattleScreenState extends State<EditCattleScreen> {
     _fechaNacimiento = widget.bovino.fechaNac;
     _sexo = widget.bovino.sexo ?? 'M';
     _selectedPredioId = widget.bovino.predioId;
+    _selectedMadreId = widget.bovino.madreId;
+    _selectedPadreId = widget.bovino.padreId;
 
     // Set raza
     if (widget.bovino.razaDominante != null) {
@@ -142,6 +161,13 @@ class _EditCattleScreenState extends State<EditCattleScreen> {
       _showOtherStatus = true;
     }
   }
+
+  String _bovinoLabel(Bovino b) =>
+      b.nombre ??
+      b.areteBarcode ??
+      b.areteRfid ??
+      b.folio ??
+      b.id.substring(0, 8);
 
   @override
   void dispose() {
@@ -287,6 +313,9 @@ class _EditCattleScreenState extends State<EditCattleScreen> {
 
       // Always include predio_id so the user can explicitly clear it
       updates['predio_id'] = _selectedPredioId;
+      // Always include madre_id / padre_id so they can be cleared
+      updates['madre_id'] = _selectedMadreId;
+      updates['padre_id'] = _selectedPadreId;
 
       await _bovinoService.updateBovino(widget.bovino.id, updates);
 
@@ -541,6 +570,77 @@ class _EditCattleScreenState extends State<EditCattleScreen> {
                     hintText: 'Ingresa el estado',
                   ),
                   textCapitalization: TextCapitalization.words,
+                ),
+              ],
+              const SizedBox(height: 24),
+              const Text(
+                'Genealogía (Opcional)',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              if (_isLoadingBovinos)
+                const LinearProgressIndicator()
+              else ...[
+                DropdownButtonFormField<String?>(
+                  value:
+                      _allBovinos.any((b) => b.id == _selectedMadreId)
+                          ? _selectedMadreId
+                          : null,
+                  decoration: const InputDecoration(
+                    labelText: 'Madre (Opcional)',
+                    prefixIcon: Icon(Icons.female_rounded),
+                    border: OutlineInputBorder(),
+                  ),
+                  isExpanded: true,
+                  items: [
+                    const DropdownMenuItem(
+                      value: null,
+                      child: Text('Sin madre registrada'),
+                    ),
+                    ..._allBovinos
+                        .where((b) => b.sexo == 'F' && b.id != widget.bovino.id)
+                        .map(
+                          (b) => DropdownMenuItem(
+                            value: b.id,
+                            child: Text(
+                              _bovinoLabel(b),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ),
+                  ],
+                  onChanged: (v) => setState(() => _selectedMadreId = v),
+                ),
+                const SizedBox(height: 16),
+                DropdownButtonFormField<String?>(
+                  value:
+                      _allBovinos.any((b) => b.id == _selectedPadreId)
+                          ? _selectedPadreId
+                          : null,
+                  decoration: const InputDecoration(
+                    labelText: 'Padre (Opcional)',
+                    prefixIcon: Icon(Icons.male_rounded),
+                    border: OutlineInputBorder(),
+                  ),
+                  isExpanded: true,
+                  items: [
+                    const DropdownMenuItem(
+                      value: null,
+                      child: Text('Sin padre registrado'),
+                    ),
+                    ..._allBovinos
+                        .where((b) => b.sexo == 'M' && b.id != widget.bovino.id)
+                        .map(
+                          (b) => DropdownMenuItem(
+                            value: b.id,
+                            child: Text(
+                              _bovinoLabel(b),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ),
+                  ],
+                  onChanged: (v) => setState(() => _selectedPadreId = v),
                 ),
               ],
               const SizedBox(height: 24),

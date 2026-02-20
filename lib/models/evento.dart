@@ -227,6 +227,7 @@ class TrasladoEvento extends Evento {
 
 // Enfermedad event
 class EnfermedadEvento extends Evento {
+  final String? enfermedadId; // enf.id returned as 'enfermedad_id' in response
   final String veterinarioId;
   final String tipo;
 
@@ -235,6 +236,7 @@ class EnfermedadEvento extends Evento {
     required super.bovinoId,
     required super.fecha,
     super.observaciones,
+    this.enfermedadId,
     required this.veterinarioId,
     required this.tipo,
   });
@@ -245,6 +247,7 @@ class EnfermedadEvento extends Evento {
       bovinoId: json['bovino_id'],
       fecha: DateTime.parse(json['fecha']),
       observaciones: json['observaciones'],
+      enfermedadId: json['enfermedad_id'],
       veterinarioId: json['veterinario_id'],
       tipo: json['tipo'],
     );
@@ -253,7 +256,7 @@ class EnfermedadEvento extends Evento {
 
 // Tratamiento event
 class TratamientoEvento extends Evento {
-  final String enfermedadId;
+  final String? enfermedadId;
   final String veterinarioId;
   final String medicamento;
   final String dosis;
@@ -264,7 +267,7 @@ class TratamientoEvento extends Evento {
     required super.bovinoId,
     required super.fecha,
     super.observaciones,
-    required this.enfermedadId,
+    this.enfermedadId,
     required this.veterinarioId,
     required this.medicamento,
     required this.dosis,

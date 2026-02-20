@@ -44,6 +44,7 @@ enum DocType {
   comprobanteDomicilio,
   predio,
   cedulaVeterinario,
+  fierroDeHerrar,
   otro,
 }
 
@@ -60,6 +61,8 @@ extension DocTypeExtension on DocType {
         return 'predio';
       case DocType.cedulaVeterinario:
         return 'cedula_veterinario';
+      case DocType.fierroDeHerrar:
+        return 'fierro';
       case DocType.otro:
         return 'otro';
     }
@@ -77,6 +80,8 @@ extension DocTypeExtension on DocType {
         return 'Documento de Predio';
       case DocType.cedulaVeterinario:
         return 'Cédula Veterinaria';
+      case DocType.fierroDeHerrar:
+        return 'Fierro de Herrar';
       case DocType.otro:
         return 'Otro';
     }

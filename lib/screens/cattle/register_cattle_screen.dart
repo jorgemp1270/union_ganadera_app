@@ -41,6 +41,10 @@ class _RegisterCattleScreenState extends State<RegisterCattleScreen> {
   List<Predio> _predios = [];
   String? _selectedPredioId;
   bool _isLoadingPredios = false;
+  List<Bovino> _allBovinos = [];
+  String? _selectedMadreId;
+  String? _selectedPadreId;
+  bool _isLoadingBovinos = false;
 
   final ApiClient _apiClient = ApiClient();
   late final BovinoService _bovinoService;
@@ -88,6 +92,7 @@ class _RegisterCattleScreenState extends State<RegisterCattleScreen> {
     _predioService = PredioService(_apiClient);
     _checkNfcAvailability();
     _loadPredios();
+    _loadBovinos();
   }
 
   Future<void> _loadPredios() async {
@@ -101,6 +106,25 @@ class _RegisterCattleScreenState extends State<RegisterCattleScreen> {
       if (mounted) setState(() => _isLoadingPredios = false);
     }
   }
+
+  Future<void> _loadBovinos() async {
+    setState(() => _isLoadingBovinos = true);
+    try {
+      final bovinos = await _bovinoService.getBovinos();
+      if (mounted) setState(() => _allBovinos = bovinos);
+    } catch (_) {
+      // Non-critical
+    } finally {
+      if (mounted) setState(() => _isLoadingBovinos = false);
+    }
+  }
+
+  String _bovinoLabel(Bovino b) =>
+      b.nombre ??
+      b.areteBarcode ??
+      b.areteRfid ??
+      b.folio ??
+      b.id.substring(0, 8);
 
   @override
   void dispose() {
@@ -310,6 +334,8 @@ class _RegisterCattleScreenState extends State<RegisterCattleScreen> {
                 : double.tryParse(_pesoActualController.text.trim()),
         proposito: proposito,
         predioId: _selectedPredioId,
+        madreId: _selectedMadreId,
+        padreId: _selectedPadreId,
         status: status,
       );
 
@@ -577,6 +603,71 @@ class _RegisterCattleScreenState extends State<RegisterCattleScreen> {
                     hintText: 'Ingresa el estado',
                   ),
                   textCapitalization: TextCapitalization.words,
+                ),
+              ],
+              const SizedBox(height: 24),
+              const Text(
+                'Genealogía (Opcional)',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              if (_isLoadingBovinos)
+                const LinearProgressIndicator()
+              else ...[
+                DropdownButtonFormField<String?>(
+                  value: _selectedMadreId,
+                  decoration: const InputDecoration(
+                    labelText: 'Madre (Opcional)',
+                    prefixIcon: Icon(Icons.female_rounded),
+                    border: OutlineInputBorder(),
+                  ),
+                  isExpanded: true,
+                  items: [
+                    const DropdownMenuItem(
+                      value: null,
+                      child: Text('Sin madre registrada'),
+                    ),
+                    ..._allBovinos
+                        .where((b) => b.sexo == 'F')
+                        .map(
+                          (b) => DropdownMenuItem(
+                            value: b.id,
+                            child: Text(
+                              _bovinoLabel(b),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ),
+                  ],
+                  onChanged: (v) => setState(() => _selectedMadreId = v),
+                ),
+                const SizedBox(height: 16),
+                DropdownButtonFormField<String?>(
+                  value: _selectedPadreId,
+                  decoration: const InputDecoration(
+                    labelText: 'Padre (Opcional)',
+                    prefixIcon: Icon(Icons.male_rounded),
+                    border: OutlineInputBorder(),
+                  ),
+                  isExpanded: true,
+                  items: [
+                    const DropdownMenuItem(
+                      value: null,
+                      child: Text('Sin padre registrado'),
+                    ),
+                    ..._allBovinos
+                        .where((b) => b.sexo == 'M')
+                        .map(
+                          (b) => DropdownMenuItem(
+                            value: b.id,
+                            child: Text(
+                              _bovinoLabel(b),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ),
+                  ],
+                  onChanged: (v) => setState(() => _selectedPadreId = v),
                 ),
               ],
               const SizedBox(height: 24),

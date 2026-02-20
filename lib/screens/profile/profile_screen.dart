@@ -36,6 +36,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   File? _ineFrontImage;
   File? _ineBackImage;
+  List<File> _fierroImages = [];
+  bool _isFierroUploading = false;
 
   @override
   void initState() {
@@ -187,6 +189,40 @@ class _ProfileScreenState extends State<ProfileScreen> {
       if (mounted) {
         setState(() => _isUploading = false);
       }
+    }
+  }
+
+  Future<void> _uploadFierros() async {
+    if (_fierroImages.isEmpty) return;
+    setState(() => _isFierroUploading = true);
+    try {
+      for (final file in _fierroImages) {
+        await _fileService.uploadFile(
+          file: file,
+          docType: DocType.fierroDeHerrar,
+        );
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Fierros subidos exitosamente'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        setState(() => _fierroImages = []);
+        await _loadUserData();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al subir fierros: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isFierroUploading = false);
     }
   }
 
@@ -655,7 +691,121 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                       ),
 
-                      // ── Document Status ─────────────────────────────────
+                      // ── Fierro de Herrar Upload ──────────────────────────────────
+                      const SizedBox(height: 20),
+                      Text(
+                        'Fierro de Herrar',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Card(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Text(
+                                'Puedes subir varias fotos de tus fierros de herrar',
+                                style: Theme.of(
+                                  context,
+                                ).textTheme.bodyMedium?.copyWith(
+                                  color:
+                                      Theme.of(
+                                        context,
+                                      ).colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              if (_fierroImages.isNotEmpty) ...[
+                                ..._fierroImages.asMap().entries.map(
+                                  (entry) => Padding(
+                                    padding: const EdgeInsets.only(bottom: 8),
+                                    child: Row(
+                                      children: [
+                                        const Icon(
+                                          Icons.local_fire_department_outlined,
+                                          size: 20,
+                                        ),
+                                        const SizedBox(width: 10),
+                                        Expanded(
+                                          child: Text(
+                                            'Fierro ${entry.key + 1}',
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        ),
+                                        IconButton(
+                                          icon: const Icon(
+                                            Icons.close_rounded,
+                                            size: 18,
+                                          ),
+                                          onPressed:
+                                              () => setState(
+                                                () => _fierroImages.removeAt(
+                                                  entry.key,
+                                                ),
+                                              ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                              ],
+                              OutlinedButton.icon(
+                                onPressed:
+                                    _isFierroUploading
+                                        ? null
+                                        : () => _showImageSourceDialog(
+                                          (img) => setState(
+                                            () => _fierroImages.add(img),
+                                          ),
+                                        ),
+                                icon: const Icon(
+                                  Icons.add_photo_alternate_outlined,
+                                ),
+                                label: const Text('Agregar fierro'),
+                                style: OutlinedButton.styleFrom(
+                                  minimumSize: const Size.fromHeight(44),
+                                ),
+                              ),
+                              if (_fierroImages.isNotEmpty) ...[
+                                const SizedBox(height: 10),
+                                FilledButton.icon(
+                                  onPressed:
+                                      _isFierroUploading
+                                          ? null
+                                          : _uploadFierros,
+                                  icon:
+                                      _isFierroUploading
+                                          ? const SizedBox(
+                                            width: 18,
+                                            height: 18,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              color: Colors.white,
+                                            ),
+                                          )
+                                          : const Icon(Icons.upload_rounded),
+                                  label: Text(
+                                    _isFierroUploading
+                                        ? 'Subiendo...'
+                                        : 'Subir ${_fierroImages.length} fierro${_fierroImages.length == 1 ? '' : 's'}',
+                                  ),
+                                  style: FilledButton.styleFrom(
+                                    minimumSize: const Size.fromHeight(48),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      // ── Document Status ─────────────────────────────────────────
                       const SizedBox(height: 20),
                       Text(
                         'Estado de Documentos',
@@ -895,6 +1045,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         return Icons.location_on;
       case 'cedula_veterinario':
         return Icons.medical_services;
+      case 'fierro':
+        return Icons.local_fire_department_outlined;
       default:
         return Icons.description;
     }
@@ -912,6 +1064,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         return 'Documento de Predio';
       case 'cedula_veterinario':
         return 'Cédula Veterinaria';
+      case 'fierro':
+        return 'Fierro de Herrar';
       default:
         return 'Otro Documento';
     }

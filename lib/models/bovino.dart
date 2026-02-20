@@ -17,6 +17,7 @@ class Bovino {
   final double? pesoActual;
   final String? proposito;
   final String status;
+  final String? folio;
 
   Bovino({
     required this.id,
@@ -37,6 +38,7 @@ class Bovino {
     this.pesoActual,
     this.proposito,
     required this.status,
+    this.folio,
   });
 
   factory Bovino.fromJson(Map<String, dynamic> json) {
@@ -60,6 +62,7 @@ class Bovino {
       pesoActual: json['peso_actual']?.toDouble(),
       proposito: json['proposito'],
       status: json['status'] ?? 'activo',
+      folio: json['folio'],
     );
   }
 

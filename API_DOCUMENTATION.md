@@ -231,6 +231,7 @@ All endpoints require authentication.
   "proposito": "Engorda",
   "nariz_storage_key": null,
   "nariz_url": null,
+  "folio": "A3B7X2K",
   "status": "activo"
 }
 ```
@@ -274,6 +275,7 @@ GET /bovinos/search?arete_barcode=MX123456789
   "peso_actual": 450.0,
   "nariz_storage_key": null,
   "nariz_url": null,
+  "folio": "A3B7X2K",
   "status": "activo"
 }
 ```
@@ -337,6 +339,7 @@ GET /bovinos/search?arete_barcode=MX123456789
   "peso_nac": 35.5,
   "peso_actual": 450.0,
   "proposito": "Engorda",
+  "folio": "A3B7X2K",
   "status": "activo"
 }
 ```
@@ -349,6 +352,7 @@ GET /bovinos/search?arete_barcode=MX123456789
 - `predio_id`: Must belong to the authenticated user if provided
 - **`usuario_original_id`:** Automatically set to the authenticated user's ID who creates the bovino. This field cannot be modified and permanently tracks the original registrant, even if ownership is transferred via sale.
 - **`usuario_id`:** Initially set to the authenticated user's ID. This field changes when the bovino is sold (compraventa event).
+- **`folio`:** Auto-generated 7-character uppercase alphanumeric code (e.g. `A3B7X2K`). Unique per bovino. Assigned at creation and never changes.
 
 ---
 
@@ -729,7 +733,7 @@ All events require authentication and ownership verification.
 }
 ```
 
-**Note:** Returns an `enfermedad_id` that can be used to link treatments.
+**Note:** Creating an enfermedad event automatically sets the bovino's `status` to `"enfermo"`. To obtain the `enfermedad_id` for linking treatments, retrieve the event via `GET /eventos/enfermedades/bovino/{bovino_id}` — all enfermedad responses include an `enfermedad_id` field.
 
 ---
 
@@ -753,7 +757,7 @@ All events require authentication and ownership verification.
 }
 ```
 
-**Required:** Must link to an existing `enfermedad_id`.
+**Required:** Must link to an existing `enfermedad_id`. The `enfermedad_id` must belong to the same bovino as the tratamiento — the API validates this and returns `400` if they do not match.
 
 ---
 
@@ -791,6 +795,25 @@ Each event type has dedicated endpoints for retrieving detailed information with
 - Sale/purchase specific: `comprador_curp` (buyer's CURP), `vendedor_curp` (seller's CURP)
 
 **Note:** Similar GET endpoints exist for all other event types (pesos, dietas, vacunaciones, desparasitaciones, laboratorios, traslados, enfermedades, tratamientos) following the same pattern at `/eventos/{type}/`.
+
+In addition, a special sub-collection endpoint exists to retrieve all treatments for a specific disease:
+
+**Endpoint:** `GET /eventos/enfermedades/{enfermedad_id}/tratamientos`
+
+**Headers:** `Authorization: Bearer {token}`
+
+**Path Parameters:**
+- `enfermedad_id`: UUID of the enfermedad record (available in `GET /eventos/enfermedades/` responses as the `enfermedad_id` field)
+
+**Query Parameters:**
+- `skip`: Pagination offset (default: 0)
+- `limit`: Number of records (default: 100)
+
+**Response:** `200 OK` — array of `TratamientoDetailResponse` (same schema as `GET /eventos/tratamientos/bovino/{bovino_id}`).
+
+**Errors:**
+- `404` — enfermedad not found
+- `403` — bovino belongs to another user
 
 ---
 
@@ -862,6 +885,7 @@ Each event type has dedicated endpoints for retrieving detailed information with
 - `comprobante_domicilio`
 - `predio`
 - `cedula_veterinario`
+- `fierro` — Brand/seal photo. **Multiple fierros per user are allowed** — uploading another fierro does not delete previous ones.
 - `otro`
 
 **Response:** `200 OK`
@@ -915,6 +939,13 @@ Files are stored in S3 with the following key patterns:
 - In future releases, admin users will be able to review and authorize documents
 - The `authored` field tracks whether an admin has verified/approved the document
 
+**One Document Per Slot (Upsert Behavior):**
+Each upload endpoint enforces a single document per logical slot. If a document already exists for that slot, the old file is deleted from S3 and replaced in the database automatically:
+- `POST /files/upload` — one document per `(user, doc_type)` pair. Re-uploading `identificacion_frente`, `identificacion_reverso`, or `cedula_veterinario` replaces the previous file.
+- `POST /domicilios/{domicilio_id}/upload-document` — one `comprobante_domicilio` per domicilio.
+- `POST /predios/{predio_id}/upload-document` — one property document per predio.
+- `POST /bovinos/{bovino_id}/upload-nose-photo` — one nose photo per bovino.
+
 ---
 
 ### 3. Delete Document
@@ -942,7 +973,7 @@ Files are stored in S3 with the following key patterns:
 - `404 Not Found` - Document not found
 - `500 Internal Server Error` - S3 deletion failed
 
-**Note:** Deletes the file from both S3 storage and the database. This is permanent and cannot be undone. Use this to replace a document by deleting the old one and re-uploading.
+**Note:** Deletes the file from both S3 storage and the database. This is permanent and cannot be undone. Note that re-uploading to the same endpoint automatically replaces the existing document, so manual deletion before re-upload is not necessary.
 
 ---
 

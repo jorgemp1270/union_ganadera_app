@@ -4,6 +4,7 @@ import 'package:union_ganadera_app/models/evento.dart';
 import 'package:union_ganadera_app/screens/events/register_event_screen.dart';
 import 'package:union_ganadera_app/screens/cattle/edit_cattle_screen.dart';
 import 'package:union_ganadera_app/services/api_client.dart';
+import 'package:union_ganadera_app/services/bovino_service.dart';
 import 'package:union_ganadera_app/services/evento_service.dart';
 import 'package:intl/intl.dart';
 import 'package:union_ganadera_app/utils/modern_app_bar.dart';
@@ -20,14 +21,36 @@ class CattleDetailScreen extends StatefulWidget {
 class _CattleDetailScreenState extends State<CattleDetailScreen> {
   final ApiClient _apiClient = ApiClient();
   late final EventoService _eventoService;
+  late final BovinoService _bovinoService;
   Map<EventType, List<Evento>> _eventosByType = {};
   bool _isLoadingEventos = true;
+  Bovino? _madre;
+  Bovino? _padre;
 
   @override
   void initState() {
     super.initState();
     _eventoService = EventoService(_apiClient);
+    _bovinoService = BovinoService(_apiClient);
     _loadEventos();
+    _loadParents();
+  }
+
+  Future<void> _loadParents() async {
+    final madreId = widget.bovino.madreId;
+    final padreId = widget.bovino.padreId;
+    if (madreId != null) {
+      try {
+        final m = await _bovinoService.getBovino(madreId);
+        if (mounted) setState(() => _madre = m);
+      } catch (_) {}
+    }
+    if (padreId != null) {
+      try {
+        final p = await _bovinoService.getBovino(padreId);
+        if (mounted) setState(() => _padre = p);
+      } catch (_) {}
+    }
   }
 
   Future<void> _loadEventos() async {
@@ -307,6 +330,13 @@ class _CattleDetailScreenState extends State<CattleDetailScreen> {
                     if (widget.bovino.narizUrl != null)
                       const SizedBox(height: 10),
                     _buildInfoCards([
+                      if (widget.bovino.folio != null)
+                        _InfoCardData(
+                          icon: Icons.tag_rounded,
+                          label: 'Folio',
+                          value: widget.bovino.folio!,
+                          highlighted: true,
+                        ),
                       if (widget.bovino.areteBarcode != null)
                         _InfoCardData(
                           icon: Icons.qr_code_2_outlined,
@@ -371,6 +401,61 @@ class _CattleDetailScreenState extends State<CattleDetailScreen> {
                           highlighted: true,
                         ),
                     ], colorScheme),
+
+                    // ── Genealogía ────────────────────────────────────────
+                    if (widget.bovino.madreId != null ||
+                        widget.bovino.padreId != null) ...[
+                      const SizedBox(height: 20),
+                      _SectionHeader(
+                        icon: Icons.account_tree_outlined,
+                        title: 'Genealogía',
+                        color: colorScheme.primary,
+                      ),
+                      const SizedBox(height: 10),
+                      if (widget.bovino.madreId != null)
+                        _ParentCard(
+                          label: 'Madre',
+                          icon: Icons.female_rounded,
+                          bovino: _madre,
+                          bovinoId: widget.bovino.madreId!,
+                          colorScheme: colorScheme,
+                          onTap:
+                              _madre != null
+                                  ? () => Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder:
+                                          (_) => CattleDetailScreen(
+                                            bovino: _madre!,
+                                          ),
+                                    ),
+                                  )
+                                  : null,
+                        ),
+                      if (widget.bovino.madreId != null &&
+                          widget.bovino.padreId != null)
+                        const SizedBox(height: 10),
+                      if (widget.bovino.padreId != null)
+                        _ParentCard(
+                          label: 'Padre',
+                          icon: Icons.male_rounded,
+                          bovino: _padre,
+                          bovinoId: widget.bovino.padreId!,
+                          colorScheme: colorScheme,
+                          onTap:
+                              _padre != null
+                                  ? () => Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder:
+                                          (_) => CattleDetailScreen(
+                                            bovino: _padre!,
+                                          ),
+                                    ),
+                                  )
+                                  : null,
+                        ),
+                    ],
 
                     // ── Evento Section Header ─────────────────────────────
                     const SizedBox(height: 28),
@@ -576,9 +661,105 @@ class _CattleDetailScreenState extends State<CattleDetailScreen> {
     } else if (evento is EnfermedadEvento) {
       return Text('Tipo: ${evento.tipo}', style: style);
     } else if (evento is TratamientoEvento) {
-      return Text(
-        'Medicamento: ${evento.medicamento}  ·  Período: ${evento.periodo}',
-        style: style,
+      // Look up the linked enfermedad event from already-loaded data
+      EnfermedadEvento? linkedEnf;
+      if (evento.enfermedadId != null) {
+        for (final e
+            in (_eventosByType[EventType.enfermedad] ?? [])
+                .whereType<EnfermedadEvento>()) {
+          if (e.enfermedadId == evento.enfermedadId) {
+            linkedEnf = e;
+            break;
+          }
+        }
+      }
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Medicamento: ${evento.medicamento}  ·  Dosis: ${evento.dosis}',
+            style: style,
+          ),
+          Text('Período: ${evento.periodo}', style: style),
+          if (linkedEnf != null) ...[
+            const SizedBox(height: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.orange.shade50,
+                border: Border.all(color: Colors.orange.shade200),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.biotech_rounded,
+                        size: 13,
+                        color: Colors.orange.shade700,
+                      ),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          'Enfermedad: ${linkedEnf.tipo}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.orange.shade800,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Detectada: ${DateFormat('dd/MM/yyyy').format(linkedEnf.fecha)}',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Colors.orange.shade600,
+                    ),
+                  ),
+                  if (linkedEnf.observaciones != null &&
+                      linkedEnf.observaciones!.isNotEmpty) ...[
+                    const SizedBox(height: 3),
+                    Text(
+                      linkedEnf.observaciones!,
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        color: Colors.orange.shade700,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ] else if (evento.enfermedadId != null) ...[
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.link_rounded,
+                    size: 13,
+                    color: Colors.orange.shade600,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Vinculado a enfermedad',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.orange.shade700,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
       );
     }
     return const SizedBox.shrink();
@@ -588,6 +769,117 @@ class _CattleDetailScreenState extends State<CattleDetailScreen> {
 // ────────────────────────────────────────────────────────────────────────────
 // Supporting widgets & data classes
 // ────────────────────────────────────────────────────────────────────────────
+
+class _ParentCard extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final Bovino? bovino;
+  final String bovinoId;
+  final ColorScheme colorScheme;
+  final VoidCallback? onTap;
+
+  const _ParentCard({
+    required this.label,
+    required this.icon,
+    required this.bovino,
+    required this.bovinoId,
+    required this.colorScheme,
+    this.onTap,
+  });
+
+  String get _displayName {
+    if (bovino == null) return bovinoId.substring(0, 8);
+    return bovino!.nombre ??
+        bovino!.areteBarcode ??
+        bovino!.areteRfid ??
+        bovino!.folio ??
+        bovinoId.substring(0, 8);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bool loaded = bovino != null;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: colorScheme.primaryContainer,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                icon,
+                size: 20,
+                color: colorScheme.onPrimaryContainer,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  loaded
+                      ? Text(
+                        _displayName,
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: colorScheme.onSurface,
+                        ),
+                      )
+                      : Row(
+                        children: [
+                          SizedBox(
+                            width: 12,
+                            height: 12,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Cargando...',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                ],
+              ),
+            ),
+            if (onTap != null)
+              Icon(
+                Icons.chevron_right_rounded,
+                color: colorScheme.onSurfaceVariant,
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
 class _SectionHeader extends StatelessWidget {
   final IconData icon;

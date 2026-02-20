@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:union_ganadera_app/models/bovino.dart';
+import 'package:union_ganadera_app/models/evento.dart';
 import 'package:union_ganadera_app/models/user.dart';
 import 'package:union_ganadera_app/services/api_client.dart';
 import 'package:union_ganadera_app/services/auth_service.dart';
@@ -55,6 +56,9 @@ class _RegisterEventScreenState extends State<RegisterEventScreen> {
   final _tratamientoController = TextEditingController();
   final _medicamentoTratController = TextEditingController();
   final _dosisTratController = TextEditingController();
+  List<EnfermedadEvento> _enfermedadEventos = [];
+  EnfermedadEvento? _selectedEnfermedad;
+  bool _isLoadingEnfermedades = false;
 
   // Compraventa fields
   final _compradorCurpController = TextEditingController();
@@ -84,6 +88,27 @@ class _RegisterEventScreenState extends State<RegisterEventScreen> {
   }
 
   bool get _isVeterinarian => _currentUser?.rol == 'veterinario';
+
+  Future<void> _loadEnfermedadesForBovino() async {
+    if (widget.bovinos.length != 1) return;
+    setState(() => _isLoadingEnfermedades = true);
+    try {
+      final eventos = await _eventoService.getEventosByType<EnfermedadEvento>(
+        EventType.enfermedad,
+        widget.bovinos.first.id,
+      );
+      if (mounted) {
+        setState(() {
+          _enfermedadEventos = eventos;
+          _selectedEnfermedad = null;
+        });
+      }
+    } catch (_) {
+      // silently ignore
+    } finally {
+      if (mounted) setState(() => _isLoadingEnfermedades = false);
+    }
+  }
 
   @override
   void dispose() {
@@ -195,7 +220,7 @@ class _RegisterEventScreenState extends State<RegisterEventScreen> {
           case 'tratamiento':
             await _eventoService.createTratamientoEvent(
               bovinoId: bovino.id,
-              enfermedadId: 'placeholder',
+              enfermedadId: _selectedEnfermedad?.enfermedadId,
               veterinarioId: _currentUser!.id,
               medicamento: _medicamentoTratController.text,
               dosis: _dosisTratController.text,
@@ -229,9 +254,9 @@ class _RegisterEventScreenState extends State<RegisterEventScreen> {
       Navigator.of(context).pop();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: ${e.toString()}')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -240,13 +265,12 @@ class _RegisterEventScreenState extends State<RegisterEventScreen> {
   Future<DateTime?> _pickDate({
     required DateTime initial,
     required DateTime last,
-  }) =>
-      showDatePicker(
-        context: context,
-        initialDate: initial,
-        firstDate: DateTime.now(),
-        lastDate: last,
-      );
+  }) => showDatePicker(
+    context: context,
+    initialDate: initial,
+    firstDate: DateTime.now(),
+    lastDate: last,
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -335,7 +359,10 @@ class _RegisterEventScreenState extends State<RegisterEventScreen> {
                     child: Text('Compra / Venta'),
                   ),
                 ],
-                onChanged: (value) => setState(() => _eventType = value!),
+                onChanged: (value) {
+                  setState(() => _eventType = value!);
+                  if (value == 'tratamiento') _loadEnfermedadesForBovino();
+                },
               ),
               const SizedBox(height: 20),
 
@@ -452,7 +479,8 @@ class _RegisterEventScreenState extends State<RegisterEventScreen> {
                       initial: DateTime.now().add(const Duration(days: 180)),
                       last: DateTime.now().add(const Duration(days: 1825)),
                     );
-                    if (d != null) setState(() => _desparasitacionFechaProx = d);
+                    if (d != null)
+                      setState(() => _desparasitacionFechaProx = d);
                   },
                 ),
               ],
@@ -506,6 +534,43 @@ class _RegisterEventScreenState extends State<RegisterEventScreen> {
 
               // ─── Tratamiento ────────────────────────────────────────────
               if (_eventType == 'tratamiento') ...[
+                // Enfermedad link (single bovino only)
+                if (widget.bovinos.length == 1) ...[
+                  _isLoadingEnfermedades
+                      ? const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 8),
+                        child: Center(
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      )
+                      : DropdownButtonFormField<EnfermedadEvento?>(
+                        value: _selectedEnfermedad,
+                        decoration: const InputDecoration(
+                          labelText: 'Enfermedad vinculada (opcional)',
+                          prefixIcon: Icon(Icons.sick_outlined),
+                          helperText:
+                              'Vincula este tratamiento a una enfermedad registrada',
+                        ),
+                        items: [
+                          const DropdownMenuItem(
+                            value: null,
+                            child: Text('Sin enfermedad vinculada'),
+                          ),
+                          ..._enfermedadEventos.map(
+                            (e) => DropdownMenuItem(
+                              value: e,
+                              child: Text(
+                                e.tipo,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ),
+                        ],
+                        onChanged:
+                            (val) => setState(() => _selectedEnfermedad = val),
+                      ),
+                  const SizedBox(height: 16),
+                ],
                 TextFormField(
                   controller: _tratamientoController,
                   decoration: const InputDecoration(

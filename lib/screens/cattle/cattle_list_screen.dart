@@ -276,7 +276,9 @@ class _CattleListScreenState extends State<CattleListScreen> {
                                     const SizedBox(height: 2),
                                     Wrap(
                                       spacing: 8,
+                                      runSpacing: 4,
                                       children: [
+                                        _StatusChip(status: bovino.status),
                                         if (bovino.areteBarcode != null)
                                           _Chip(
                                             icon: Icons.qr_code_2_outlined,
@@ -557,6 +559,82 @@ class _Chip extends StatelessWidget {
           Text(
             label,
             style: TextStyle(fontSize: 11.5, color: cs.onSurfaceVariant),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatusChip extends StatelessWidget {
+  final String status;
+  const _StatusChip({required this.status});
+
+  Color _bgColor() {
+    switch (status.toLowerCase()) {
+      case 'activo':
+        return Colors.green.shade100;
+      case 'en tratamiento':
+        return Colors.orange.shade100;
+      case 'muerto':
+        return Colors.red.shade100;
+      case 'inactivo':
+        return Colors.grey.shade200;
+      default:
+        return Colors.blueGrey.shade50;
+    }
+  }
+
+  Color _fgColor() {
+    switch (status.toLowerCase()) {
+      case 'activo':
+        return Colors.green.shade800;
+      case 'en tratamiento':
+        return Colors.orange.shade800;
+      case 'muerto':
+        return Colors.red.shade800;
+      case 'inactivo':
+        return Colors.grey.shade700;
+      default:
+        return Colors.blueGrey.shade700;
+    }
+  }
+
+  IconData _icon() {
+    switch (status.toLowerCase()) {
+      case 'activo':
+        return Icons.check_circle_outline_rounded;
+      case 'en tratamiento':
+        return Icons.medical_services_outlined;
+      case 'muerto':
+        return Icons.cancel_outlined;
+      case 'inactivo':
+        return Icons.pause_circle_outline_rounded;
+      default:
+        return Icons.circle_outlined;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+      decoration: BoxDecoration(
+        color: _bgColor(),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(_icon(), size: 12, color: _fgColor()),
+          const SizedBox(width: 4),
+          Text(
+            status,
+            style: TextStyle(
+              fontSize: 11.5,
+              color: _fgColor(),
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ],
       ),
