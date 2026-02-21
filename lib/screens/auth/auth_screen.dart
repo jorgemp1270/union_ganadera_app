@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:union_ganadera_app/screens/home/home_screen.dart';
+// import 'package:union_ganadera_app/screens/ocr/ocr_test_screen.dart';
 import 'package:union_ganadera_app/screens/settings/api_settings_screen.dart';
 import 'package:union_ganadera_app/services/api_client.dart';
 import 'package:union_ganadera_app/services/auth_service.dart';
@@ -309,6 +310,18 @@ class _LoginTabState extends State<LoginTab> {
                         )
                         : const Text('Iniciar Sesión'),
               ),
+              // const SizedBox(height: 12),
+              // OutlinedButton.icon(
+              //   onPressed:
+              //       () => Navigator.of(context).push(
+              //         MaterialPageRoute(builder: (_) => const OcrTestScreen()),
+              //       ),
+              //   icon: const Icon(Icons.document_scanner_outlined),
+              //   label: const Text('Prueba OCR'),
+              //   style: OutlinedButton.styleFrom(
+              //     minimumSize: const Size.fromHeight(48),
+              //   ),
+              // ),
             ],
           ),
         ),

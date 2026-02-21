@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:union_ganadera_app/screens/auth/signup_screen.dart';
 import 'package:union_ganadera_app/screens/home/home_screen.dart';
+import 'package:union_ganadera_app/screens/ocr/ocr_test_screen.dart';
 import 'package:union_ganadera_app/services/api_client.dart';
 import 'package:union_ganadera_app/services/auth_service.dart';
 
@@ -229,6 +230,24 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: Text(
                     '¿No tienes cuenta? Regístrate',
                     style: TextStyle(color: Colors.green.shade700),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const OcrTestScreen()),
+                    );
+                  },
+                  icon: const Icon(Icons.document_scanner_outlined),
+                  label: const Text('Prueba OCR'),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    foregroundColor: Colors.green.shade700,
+                    side: BorderSide(color: Colors.green.shade700),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
                 ),
               ],
