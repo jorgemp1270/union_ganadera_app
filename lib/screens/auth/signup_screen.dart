@@ -679,6 +679,7 @@ class _SignupScreenState extends State<SignupScreen> {
                   hintText: 'Ej: 12345678',
                 ),
                 keyboardType: TextInputType.number,
+                maxLength: 50,
                 validator:
                     (v) => v?.trim().isEmpty == true ? 'Requerido' : null,
               ),
