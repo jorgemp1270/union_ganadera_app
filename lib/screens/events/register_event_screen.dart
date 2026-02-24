@@ -60,6 +60,9 @@ class _RegisterEventScreenState extends State<RegisterEventScreen> {
   EnfermedadEvento? _selectedEnfermedad;
   bool _isLoadingEnfermedades = false;
 
+  // Remision fields (single bovino only)
+  EnfermedadEvento? _selectedEnfermedadRemision;
+
   // Compraventa fields
   final _compradorCurpController = TextEditingController();
   final _vendedorCurpController = TextEditingController();
@@ -141,6 +144,7 @@ class _RegisterEventScreenState extends State<RegisterEventScreen> {
       'laboratorio',
       'enfermedad',
       'tratamiento',
+      'remision',
     };
     if (vetEventTypes.contains(_eventType) && _currentUser == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -238,6 +242,24 @@ class _RegisterEventScreenState extends State<RegisterEventScreen> {
               bovinoId: bovino.id,
               compradorCurp: _compradorCurpController.text.toUpperCase(),
               vendedorCurp: _currentUser!.curp.toUpperCase(),
+              observaciones: obs,
+            );
+            break;
+          case 'remision':
+            if (widget.bovinos.length != 1) {
+              throw Exception(
+                'La remisión debe registrarse para un solo bovino a la vez.',
+              );
+            }
+            if (_selectedEnfermedadRemision == null ||
+                _selectedEnfermedadRemision!.enfermedadId == null) {
+              throw Exception(
+                'Debes seleccionar la enfermedad a la que corresponde la remisión.',
+              );
+            }
+            await _eventoService.createRemisionEvent(
+              bovinoId: bovino.id,
+              enfermedadId: _selectedEnfermedadRemision!.enfermedadId!,
               observaciones: obs,
             );
             break;
@@ -358,6 +380,10 @@ class _RegisterEventScreenState extends State<RegisterEventScreen> {
                       value: 'tratamiento',
                       child: Text('Tratamiento'),
                     ),
+                    const DropdownMenuItem(
+                      value: 'remision',
+                      child: Text('Remisión (Alta Médica)'),
+                    ),
                   ],
                   const DropdownMenuItem(
                     value: 'compraventa',
@@ -367,6 +393,7 @@ class _RegisterEventScreenState extends State<RegisterEventScreen> {
                 onChanged: (value) {
                   setState(() => _eventType = value!);
                   if (value == 'tratamiento') _loadEnfermedadesForBovino();
+                  if (value == 'remision') _loadEnfermedadesForBovino();
                 },
               ),
               const SizedBox(height: 20),
@@ -605,6 +632,84 @@ class _RegisterEventScreenState extends State<RegisterEventScreen> {
                   validator:
                       (v) => v?.isEmpty ?? true ? 'Campo requerido' : null,
                 ),
+              ],
+
+              // ─── Remisión ────────────────────────────────────────────────
+              if (_eventType == 'remision') ...[
+                if (widget.bovinos.length > 1)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 12,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.red.shade50,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.red.shade200),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.error_outline_rounded,
+                          size: 20,
+                          color: Colors.red.shade700,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'La remisión debe registrarse individualmente '
+                            'por bovino ya que requiere vincular una enfermedad específica.',
+                            style: TextStyle(
+                              color: Colors.red.shade700,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                else ...[
+                  _isLoadingEnfermedades
+                      ? const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 8),
+                        child: Center(
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      )
+                      : DropdownButtonFormField<EnfermedadEvento?>(
+                        value: _selectedEnfermedadRemision,
+                        decoration: const InputDecoration(
+                          labelText: 'Enfermedad de la que se da de alta',
+                          prefixIcon: Icon(Icons.sick_outlined),
+                          helperText:
+                              'Selecciona la enfermedad que quedó resuelta',
+                        ),
+                        items: [
+                          const DropdownMenuItem(
+                            value: null,
+                            child: Text('Seleccionar enfermedad...'),
+                          ),
+                          ..._enfermedadEventos.map(
+                            (e) => DropdownMenuItem(
+                              value: e,
+                              child: Text(
+                                e.tipo,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ),
+                        ],
+                        validator:
+                            (val) =>
+                                val == null
+                                    ? 'Debes seleccionar una enfermedad'
+                                    : null,
+                        onChanged:
+                            (val) => setState(
+                              () => _selectedEnfermedadRemision = val,
+                            ),
+                      ),
+                ],
               ],
 
               // ─── Compraventa ────────────────────────────────────────────

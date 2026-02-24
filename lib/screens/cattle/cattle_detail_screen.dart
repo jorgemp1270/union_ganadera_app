@@ -128,6 +128,8 @@ class _CattleDetailScreenState extends State<CattleDetailScreen> {
         return Colors.red;
       case EventType.tratamiento:
         return Colors.deepOrange;
+      case EventType.remision:
+        return Colors.lightGreen.shade700;
     }
   }
 
@@ -151,6 +153,8 @@ class _CattleDetailScreenState extends State<CattleDetailScreen> {
         return Icons.sick_outlined;
       case EventType.tratamiento:
         return Icons.healing_outlined;
+      case EventType.remision:
+        return Icons.verified_outlined;
     }
   }
 
@@ -763,6 +767,101 @@ class _CattleDetailScreenState extends State<CattleDetailScreen> {
                     style: TextStyle(
                       fontSize: 12,
                       color: Colors.orange.shade700,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      );
+    } else if (evento is RemisionEvento) {
+      // Look up the linked enfermedad event from already-loaded data
+      EnfermedadEvento? linkedEnf;
+      for (final e
+          in (_eventosByType[EventType.enfermedad] ?? [])
+              .whereType<EnfermedadEvento>()) {
+        if (e.enfermedadId == evento.enfermedadId) {
+          linkedEnf = e;
+          break;
+        }
+      }
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Alta médica emitida', style: style),
+          const SizedBox(height: 4),
+          if (linkedEnf != null) ...[
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.lightGreen.shade50,
+                border: Border.all(color: Colors.lightGreen.shade300),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.sick_outlined,
+                        size: 13,
+                        color: Colors.lightGreen.shade800,
+                      ),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          'Enfermedad: ${linkedEnf.tipo}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.lightGreen.shade800,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Detectada: ${DateFormat('dd/MM/yyyy').format(linkedEnf.fecha)}',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Colors.lightGreen.shade700,
+                    ),
+                  ),
+                  if (linkedEnf.observaciones != null &&
+                      linkedEnf.observaciones!.isNotEmpty) ...[
+                    const SizedBox(height: 3),
+                    Text(
+                      linkedEnf.observaciones!,
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        color: Colors.lightGreen.shade700,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ] else ...[
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.link_rounded,
+                    size: 13,
+                    color: Colors.lightGreen.shade700,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Vinculado a enfermedad',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.lightGreen.shade800,
                       fontStyle: FontStyle.italic,
                     ),
                   ),

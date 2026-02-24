@@ -943,7 +943,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                             ),
                                             Text(
                                               hasDoc
-                                                  ? doc!.originalFilename
+                                                  ? doc.originalFilename
                                                   : 'Sin documento',
                                               maxLines: 1,
                                               overflow: TextOverflow.ellipsis,

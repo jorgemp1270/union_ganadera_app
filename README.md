@@ -74,6 +74,7 @@ Esta aplicación permite a los **ganaderos y veterinarios** registrar y gestiona
   - Visualización en línea de tiempo por tipo de evento
   - Detalles de peso mostrando peso nuevo y peso anterior
   - **Tratamientos vinculados a enfermedad:** si un tratamiento está ligado a un evento de enfermedad, se muestra una tarjeta expandida con el tipo de enfermedad, fecha de detección y observaciones en estilo destacado naranja
+  - **Remisiones (altas médicas):** cada evento de remisión muestra una tarjeta expandida en verde con la enfermedad resuelta, su fecha de detección y observaciones — estilo visual paralelo al de tratamientos
 
 ### Gestión de Predios
 - Registro de predios con captura de ubicación GPS automática
@@ -100,12 +101,13 @@ Los eventos disponibles dependen del **rol del usuario**:
 - `laboratorio` — Tipo de análisis y resultado
 - `enfermedad` — Tipo de enfermedad y observaciones; establece automáticamente el estatus del bovino a `enfermo`
 - `tratamiento` — Medicamento, dosis y período; **dropdown opcional para vincular a un evento de enfermedad existente** del mismo bovino (solo registro individual)
+- `remision` — Alta médica del bovino; **dropdown requerido para seleccionar la enfermedad que quedó resuelta** (solo registro individual); el `veterinario_id` se resuelve automáticamente en el backend a partir del usuario autenticado
 
 El ID del veterinario se toma automáticamente de la sesión activa — no se solicita al usuario. Los veterinarios también pueden registrar eventos para ganado de terceros desde la pantalla **Eventos Veterinarios** (búsqueda por código de barras, RFID **o nombre**).
 
 - Registro individual o masivo (selección múltiple)
 - Historial completo de eventos agrupados por tipo
-- **Pantalla Eventos Veterinarios renovada:** colores adaptativos via `ColorScheme`, botones `FilledButton`, tarjetas sin elevación fija
+- **Pantalla Eventos Veterinarios renovada:** colores adaptativos via `ColorScheme`, botones `FilledButton`, tarjetas sin elevación fija; soporte completo para tratamientos y remisiones con dropdown de enfermedad vinculada
 
 ### Perfil de Usuario
 - Visualización de datos personales
@@ -334,6 +336,14 @@ flutter run -d <device_id>
    - Selecciona y completa el tipo de evento veterinario
    - El ID del veterinario se asigna automáticamente
 
+4. **Registrar una remisión (alta médica):**
+   - Abre el formulario de evento (desde la vista detallada del bovino o desde **Eventos Veterinarios**)
+   - Selecciona el tipo **"Remisión (Alta Médica)"** — solo visible para veterinarios
+   - Elige en el dropdown la **enfermedad resuelta** (se cargan automáticamente las enfermedades registradas para ese bovino; el campo es obligatorio)
+   - Agrega observaciones opcionales y presiona **"Registrar Evento"**
+   - El `veterinario_id` se asigna automáticamente desde la sesión activa; la remisión queda vinculada a la enfermedad seleccionada
+   - En la pantalla de detalle del bovino, la remisión aparece en el historial de eventos como una tarjeta verde con los datos de la enfermedad resuelta
+
 ## 📂 Estructura del Proyecto
 
 ```
@@ -345,14 +355,14 @@ lib/
 │   ├── predio.dart                     # Predios con GPS y usuario_id
 │   ├── domicilio.dart                  # Domicilio del usuario
 │   ├── document_file.dart              # Documentos con DocType actualizado (frente/reverso/fierro) + DocumentRevision (estado de revisión administrativa)
-│   └── evento.dart                     # 9 tipos de eventos (incluyendo PesoEvento, EnfermedadEvento con enfermedadId, TratamientoEvento con vínculo opcional a enfermedad)
+│   └── evento.dart                     # 10 tipos de eventos (incluyendo PesoEvento, EnfermedadEvento con enfermedadId, TratamientoEvento con vínculo opcional a enfermedad, RemisionEvento con enfermedadId vinculado a la enfermedad resuelta)
 ├── services/                           # Servicios de API y lógica de negocio
 │   ├── api_client.dart                 # Cliente Dio con interceptores JWT y manejo 401
 │   ├── auth_service.dart               # Autenticación y registro
 │   ├── bovino_service.dart             # CRUD de ganado + filtro por predio + upload foto nariz
 │   ├── predio_service.dart             # CRUD de predios + upload documento de predio
 │   ├── domicilio_service.dart          # CRUD de domicilios + upload comprobante
-│   ├── evento_service.dart             # Registro de eventos por tipo
+│   └── evento_service.dart             # Registro de eventos por tipo (incluye createRemisionEvent)
 │   └── file_service.dart               # Carga, eliminación y consulta de documentos multipart
 ├── screens/
 │   ├── splash_screen.dart              # Splash animado con nombre MUU-NITOREO
@@ -366,13 +376,13 @@ lib/
 │   ├── cattle_list_screen.dart     # Lista + selección múltiple + buscador + chips de estatus con color
 │   ├── register_cattle_screen.dart # Registro con predio, foto nariz y Genealogía (madre/padre)
 │   ├── edit_cattle_screen.dart     # Edición con predio, datos pre-cargados y Genealogía
-│   └── cattle_detail_screen.dart   # Vista grid + folio + foto biométrica + Genealogía + historial de eventos con enfermedad vinculada
+│   └── cattle_detail_screen.dart   # Vista grid + folio + foto biométrica + Genealogía + historial de eventos con enfermedad vinculada y remisiones
 │   ├── predios/
 │   │   ├── predios_screen.dart         # Lista + bottom sheet de registro + selector archivos
 │   │   └── predio_detail_screen.dart   # Detalle del predio con documentos y ganado
 │   ├── events/
-│   │   ├── register_event_screen.dart  # Eventos propios (tipos según rol)
-│   │   └── vet_event_screen.dart       # Búsqueda (barcode/RFID/nombre) + eventos vet.
+│   │   ├── register_event_screen.dart  # Eventos propios (tipos según rol; incluye remisión para veterinarios)
+│   │   └── vet_event_screen.dart       # Búsqueda (barcode/RFID/nombre) + eventos vet. (incluye remisión con dropdown de enfermedad)
 │   ├── profile/
 │   │   └── profile_screen.dart         # Perfil con domicilio, INE, Fierro de Herrar, checklist docs y visor de archivos
 │   └── settings/

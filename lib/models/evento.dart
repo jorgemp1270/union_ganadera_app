@@ -254,6 +254,32 @@ class EnfermedadEvento extends Evento {
   }
 }
 
+// Remision event
+class RemisionEvento extends Evento {
+  final String enfermedadId;
+  final String veterinarioId;
+
+  RemisionEvento({
+    required super.id,
+    required super.bovinoId,
+    required super.fecha,
+    super.observaciones,
+    required this.enfermedadId,
+    required this.veterinarioId,
+  });
+
+  factory RemisionEvento.fromJson(Map<String, dynamic> json) {
+    return RemisionEvento(
+      id: json['id'],
+      bovinoId: json['bovino_id'],
+      fecha: DateTime.parse(json['fecha']),
+      observaciones: json['observaciones'],
+      enfermedadId: json['enfermedad_id'],
+      veterinarioId: json['veterinario_id'],
+    );
+  }
+}
+
 // Tratamiento event
 class TratamientoEvento extends Evento {
   final String? enfermedadId;
@@ -299,6 +325,7 @@ enum EventType {
   traslado,
   enfermedad,
   tratamiento,
+  remision,
 }
 
 extension EventTypeExtension on EventType {
@@ -322,6 +349,8 @@ extension EventTypeExtension on EventType {
         return 'enfermedades';
       case EventType.tratamiento:
         return 'tratamientos';
+      case EventType.remision:
+        return 'remisiones';
     }
   }
 
@@ -345,6 +374,8 @@ extension EventTypeExtension on EventType {
         return 'Detección de Enfermedad';
       case EventType.tratamiento:
         return 'Tratamiento';
+      case EventType.remision:
+        return 'Remisión';
     }
   }
 }

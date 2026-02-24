@@ -72,6 +72,8 @@ class EventoService {
             return EnfermedadEvento.fromJson(json) as T;
           case EventType.tratamiento:
             return TratamientoEvento.fromJson(json) as T;
+          case EventType.remision:
+            return RemisionEvento.fromJson(json) as T;
         }
       }).toList();
     } on DioException catch (e) {
@@ -307,6 +309,29 @@ class EventoService {
       final response = await apiClient.dio.post(
         '/eventos/',
         data: {'type': 'tratamiento', 'data': data},
+      );
+      return Evento.fromJson(response.data);
+    } on DioException catch (e) {
+      throw Exception('Error al crear evento: ${e.message}');
+    }
+  }
+
+  Future<Evento> createRemisionEvent({
+    required String bovinoId,
+    required String enfermedadId,
+    String? observaciones,
+  }) async {
+    try {
+      final response = await apiClient.dio.post(
+        '/eventos/',
+        data: {
+          'type': 'remision',
+          'data': {
+            'bovino_id': bovinoId,
+            'enfermedad_id': enfermedadId,
+            'observaciones': observaciones ?? '',
+          },
+        },
       );
       return Evento.fromJson(response.data);
     } on DioException catch (e) {

@@ -49,7 +49,7 @@ class _SignupScreenState extends State<SignupScreen> {
   // ── State ────────────────────────────────────────────────────────────────────
   int _currentStep = 0;
   String _userType = 'ganadero';
-  String _sexo = 'H';
+  String _sexo = 'M';
   DateTime? _fechaNacimiento;
 
   File? _ineFrontPhoto;

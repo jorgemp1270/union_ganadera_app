@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:union_ganadera_app/models/bovino.dart';
+import 'package:union_ganadera_app/models/evento.dart';
 import 'package:union_ganadera_app/models/user.dart';
 import 'package:union_ganadera_app/services/api_client.dart';
 import 'package:union_ganadera_app/services/auth_service.dart';
@@ -58,6 +59,12 @@ class _VetEventScreenState extends State<VetEventScreen> {
   final _medicamentoTratController = TextEditingController();
   final _dosisTratController = TextEditingController();
 
+  // Enfermedad selection (for tratamiento and remision)
+  List<EnfermedadEvento> _enfermedadEventos = [];
+  EnfermedadEvento? _selectedEnfermedadTrat;
+  EnfermedadEvento? _selectedEnfermedadRemision;
+  bool _isLoadingEnfermedades = false;
+
   // Observaciones
   final _observacionesController = TextEditingController();
 
@@ -76,6 +83,28 @@ class _VetEventScreenState extends State<VetEventScreen> {
       setState(() => _currentUser = user);
     } catch (e) {
       // Handle error
+    }
+  }
+
+  Future<void> _loadEnfermedadesForBovino() async {
+    if (_foundBovino == null) return;
+    setState(() => _isLoadingEnfermedades = true);
+    try {
+      final eventos = await _eventoService.getEventosByType<EnfermedadEvento>(
+        EventType.enfermedad,
+        _foundBovino!.id,
+      );
+      if (mounted) {
+        setState(() {
+          _enfermedadEventos = eventos;
+          _selectedEnfermedadTrat = null;
+          _selectedEnfermedadRemision = null;
+        });
+      }
+    } catch (_) {
+      // silently ignore
+    } finally {
+      if (mounted) setState(() => _isLoadingEnfermedades = false);
     }
   }
 
@@ -129,6 +158,10 @@ class _VetEventScreenState extends State<VetEventScreen> {
       );
 
       setState(() => _foundBovino = bovino);
+
+      if (_eventType == 'tratamiento' || _eventType == 'remision') {
+        _loadEnfermedadesForBovino();
+      }
 
       if (!mounted) return;
 
@@ -246,15 +279,33 @@ class _VetEventScreenState extends State<VetEventScreen> {
           break;
         case 'tratamiento':
           // For tratamiento, we need an enfermedad_id
-          // This is simplified - in production you'd select from existing enfermedades
           await _eventoService.createTratamientoEvent(
             bovinoId: _foundBovino!.id,
-            enfermedadId: 'placeholder', // TODO: implement enfermedad selection
+            enfermedadId: _selectedEnfermedadTrat?.enfermedadId,
             veterinarioId: _currentUser!.id,
             medicamento: _medicamentoTratController.text,
             dosis: _dosisTratController.text,
             periodo: _tratamientoController.text,
-            observaciones: _observacionesController.text,
+            observaciones:
+                _observacionesController.text.isNotEmpty
+                    ? _observacionesController.text
+                    : null,
+          );
+          break;
+        case 'remision':
+          if (_selectedEnfermedadRemision == null ||
+              _selectedEnfermedadRemision!.enfermedadId == null) {
+            throw Exception(
+              'Debes seleccionar la enfermedad a la que corresponde la remisión.',
+            );
+          }
+          await _eventoService.createRemisionEvent(
+            bovinoId: _foundBovino!.id,
+            enfermedadId: _selectedEnfermedadRemision!.enfermedadId!,
+            observaciones:
+                _observacionesController.text.isNotEmpty
+                    ? _observacionesController.text
+                    : null,
           );
           break;
       }
@@ -287,6 +338,9 @@ class _VetEventScreenState extends State<VetEventScreen> {
         _tratamientoController.clear();
         _medicamentoTratController.clear();
         _dosisTratController.clear();
+        _enfermedadEventos = [];
+        _selectedEnfermedadTrat = null;
+        _selectedEnfermedadRemision = null;
         _observacionesController.clear();
       });
     } catch (e) {
@@ -521,8 +575,17 @@ class _VetEventScreenState extends State<VetEventScreen> {
                     value: 'tratamiento',
                     child: Text('Tratamiento'),
                   ),
+                  DropdownMenuItem(
+                    value: 'remision',
+                    child: Text('Remisión (Alta Médica)'),
+                  ),
                 ],
-                onChanged: (value) => setState(() => _eventType = value!),
+                onChanged: (value) {
+                  setState(() => _eventType = value!);
+                  if (value == 'tratamiento' || value == 'remision') {
+                    _loadEnfermedadesForBovino();
+                  }
+                },
               ),
               const SizedBox(height: 16),
               ..._buildEventTypeFields(),
@@ -714,6 +777,36 @@ class _VetEventScreenState extends State<VetEventScreen> {
 
       case 'tratamiento':
         return [
+          _isLoadingEnfermedades
+              ? const Padding(
+                padding: EdgeInsets.symmetric(vertical: 8),
+                child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+              )
+              : DropdownButtonFormField<EnfermedadEvento?>(
+                value: _selectedEnfermedadTrat,
+                decoration: const InputDecoration(
+                  labelText: 'Enfermedad vinculada (opcional)',
+                  prefixIcon: Icon(Icons.sick_outlined),
+                  border: OutlineInputBorder(),
+                  helperText:
+                      'Vincula este tratamiento a una enfermedad registrada',
+                ),
+                items: [
+                  const DropdownMenuItem(
+                    value: null,
+                    child: Text('Sin enfermedad vinculada'),
+                  ),
+                  ..._enfermedadEventos.map(
+                    (e) => DropdownMenuItem(
+                      value: e,
+                      child: Text(e.tipo, overflow: TextOverflow.ellipsis),
+                    ),
+                  ),
+                ],
+                onChanged:
+                    (val) => setState(() => _selectedEnfermedadTrat = val),
+              ),
+          const SizedBox(height: 16),
           TextFormField(
             controller: _tratamientoController,
             decoration: const InputDecoration(
@@ -739,6 +832,41 @@ class _VetEventScreenState extends State<VetEventScreen> {
               border: OutlineInputBorder(),
             ),
           ),
+        ];
+
+      case 'remision':
+        return [
+          _isLoadingEnfermedades
+              ? const Padding(
+                padding: EdgeInsets.symmetric(vertical: 8),
+                child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+              )
+              : DropdownButtonFormField<EnfermedadEvento?>(
+                value: _selectedEnfermedadRemision,
+                decoration: const InputDecoration(
+                  labelText: 'Enfermedad de la que se da de alta',
+                  prefixIcon: Icon(Icons.sick_outlined),
+                  border: OutlineInputBorder(),
+                  helperText: 'Selecciona la enfermedad que quedó resuelta',
+                ),
+                items: [
+                  const DropdownMenuItem(
+                    value: null,
+                    child: Text('Seleccionar enfermedad...'),
+                  ),
+                  ..._enfermedadEventos.map(
+                    (e) => DropdownMenuItem(
+                      value: e,
+                      child: Text(e.tipo, overflow: TextOverflow.ellipsis),
+                    ),
+                  ),
+                ],
+                validator:
+                    (val) =>
+                        val == null ? 'Debes seleccionar una enfermedad' : null,
+                onChanged:
+                    (val) => setState(() => _selectedEnfermedadRemision = val),
+              ),
         ];
 
       default:
