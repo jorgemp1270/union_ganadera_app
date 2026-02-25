@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:union_ganadera_app/models/bovino.dart';
 import 'package:union_ganadera_app/models/evento.dart';
+import 'package:union_ganadera_app/models/predio.dart';
 import 'package:union_ganadera_app/screens/events/register_event_screen.dart';
 import 'package:union_ganadera_app/screens/cattle/edit_cattle_screen.dart';
 import 'package:union_ganadera_app/services/api_client.dart';
 import 'package:union_ganadera_app/services/bovino_service.dart';
 import 'package:union_ganadera_app/services/evento_service.dart';
+import 'package:union_ganadera_app/services/predio_service.dart';
 import 'package:intl/intl.dart';
 import 'package:union_ganadera_app/utils/modern_app_bar.dart';
 
@@ -22,8 +24,10 @@ class _CattleDetailScreenState extends State<CattleDetailScreen> {
   final ApiClient _apiClient = ApiClient();
   late final EventoService _eventoService;
   late final BovinoService _bovinoService;
+  late final PredioService _predioService;
   Map<EventType, List<Evento>> _eventosByType = {};
   bool _isLoadingEventos = true;
+  List<Predio> _predios = [];
   Bovino? _madre;
   Bovino? _padre;
   bool _madreCrossOwner = false;
@@ -34,8 +38,19 @@ class _CattleDetailScreenState extends State<CattleDetailScreen> {
     super.initState();
     _eventoService = EventoService(_apiClient);
     _bovinoService = BovinoService(_apiClient);
+    _predioService = PredioService(_apiClient);
     _loadEventos();
     _loadParents();
+    _loadPredios();
+  }
+
+  Future<void> _loadPredios() async {
+    try {
+      final predios = await _predioService.getPredios();
+      if (mounted) setState(() => _predios = predios);
+    } catch (_) {
+      // Non-critical — falls back to ID display
+    }
   }
 
   Future<void> _loadParents() async {
@@ -870,6 +885,58 @@ class _CattleDetailScreenState extends State<CattleDetailScreen> {
             ),
           ],
         ],
+      );
+    } else if (evento is TrasladoEvento) {
+      final predio =
+          _predios.where((p) => p.id == evento.predioNuevoId).firstOrNull;
+      final predioLabel =
+          predio?.claveCatastral ??
+          '…${evento.predioNuevoId.substring(evento.predioNuevoId.length - 8)}';
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        decoration: BoxDecoration(
+          color: Colors.cyan.shade50,
+          border: Border.all(color: Colors.cyan.shade200),
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              Icons.landscape_rounded,
+              size: 14,
+              color: Colors.cyan.shade700,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Predio de destino',
+                    style: TextStyle(fontSize: 11, color: Colors.cyan.shade700),
+                  ),
+                  Text(
+                    predioLabel,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.cyan.shade800,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (predio?.superficieTotal != null)
+                    Text(
+                      '${predio!.superficieTotal!.toStringAsFixed(1)} ha',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.cyan.shade700,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
       );
     }
     return const SizedBox.shrink();

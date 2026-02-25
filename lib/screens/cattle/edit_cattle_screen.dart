@@ -2,10 +2,9 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:union_ganadera_app/models/bovino.dart';
-import 'package:union_ganadera_app/models/predio.dart';
 import 'package:union_ganadera_app/services/api_client.dart';
 import 'package:union_ganadera_app/services/bovino_service.dart';
-import 'package:union_ganadera_app/services/predio_service.dart';
+import 'package:union_ganadera_app/screens/events/register_event_screen.dart';
 import 'package:union_ganadera_app/utils/modern_app_bar.dart';
 
 class EditCattleScreen extends StatefulWidget {
@@ -37,9 +36,6 @@ class _EditCattleScreenState extends State<EditCattleScreen> {
   bool _showOtherStatus = false;
   File? _nosePhoto;
   bool _isLoading = false;
-  List<Predio> _predios = [];
-  String? _selectedPredioId;
-  bool _isLoadingPredios = false;
   List<Bovino> _allBovinos = [];
   String? _selectedMadreId;
   String? _selectedPadreId;
@@ -47,7 +43,6 @@ class _EditCattleScreenState extends State<EditCattleScreen> {
 
   final ApiClient _apiClient = ApiClient();
   late final BovinoService _bovinoService;
-  late final PredioService _predioService;
   final ImagePicker _imagePicker = ImagePicker();
   final _statusController = TextEditingController();
 
@@ -88,22 +83,8 @@ class _EditCattleScreenState extends State<EditCattleScreen> {
   void initState() {
     super.initState();
     _bovinoService = BovinoService(_apiClient);
-    _predioService = PredioService(_apiClient);
     _loadBovinoData();
-    _loadPredios();
     _loadBovinos();
-  }
-
-  Future<void> _loadPredios() async {
-    setState(() => _isLoadingPredios = true);
-    try {
-      final predios = await _predioService.getPredios();
-      if (mounted) setState(() => _predios = predios);
-    } catch (_) {
-      // Non-critical — form still works without predios loaded
-    } finally {
-      if (mounted) setState(() => _isLoadingPredios = false);
-    }
   }
 
   Future<void> _loadBovinos() async {
@@ -126,7 +107,6 @@ class _EditCattleScreenState extends State<EditCattleScreen> {
     _pesoActualController.text = widget.bovino.pesoActual?.toString() ?? '';
     _fechaNacimiento = widget.bovino.fechaNac;
     _sexo = widget.bovino.sexo ?? 'M';
-    _selectedPredioId = widget.bovino.predioId;
     _selectedMadreId = widget.bovino.madreId;
     _selectedPadreId = widget.bovino.padreId;
 
@@ -309,10 +289,8 @@ class _EditCattleScreenState extends State<EditCattleScreen> {
                 : double.tryParse(_pesoActualController.text.trim()),
         'proposito': proposito,
         'status': status,
-      }..removeWhere((key, value) => key != 'predio_id' && value == null);
+      }..removeWhere((key, value) => value == null);
 
-      // Always include predio_id so the user can explicitly clear it
-      updates['predio_id'] = _selectedPredioId;
       // Always include madre_id / padre_id so they can be cleared
       updates['madre_id'] = _selectedMadreId;
       updates['padre_id'] = _selectedPadreId;
@@ -645,48 +623,34 @@ class _EditCattleScreenState extends State<EditCattleScreen> {
               ],
               const SizedBox(height: 24),
               const Text(
-                'Ubicación (Predio)',
+                'Traslado de Predio',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
-              if (_isLoadingPredios)
-                const LinearProgressIndicator()
-              else
-                DropdownButtonFormField<String?>(
-                  value:
-                      _predios.any((p) => p.id == _selectedPredioId)
-                          ? _selectedPredioId
-                          : null,
-                  decoration: const InputDecoration(
-                    labelText: 'Predio (Opcional)',
-                    prefixIcon: Icon(Icons.landscape_rounded),
-                    border: OutlineInputBorder(),
-                  ),
-                  isExpanded: true,
-                  selectedItemBuilder:
-                      (context) => [
-                        const Text('Sin predio'),
-                        ..._predios.map(
-                          (p) => Text(
-                            p.claveCatastral ?? 'Sin clave catastral',
-                            overflow: TextOverflow.ellipsis,
+              const Text(
+                'Para cambiar el predio del animal, registra un evento de traslado.',
+                style: TextStyle(fontSize: 13, color: Colors.grey),
+              ),
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder:
+                          (_) => RegisterEventScreen(
+                            bovinos: [widget.bovino],
+                            initialEventType: 'traslado',
                           ),
-                        ),
-                      ],
-                  items: [
-                    const DropdownMenuItem(
-                      value: null,
-                      child: Text('Sin predio'),
                     ),
-                    ..._predios.map(
-                      (p) => DropdownMenuItem(
-                        value: p.id,
-                        child: _PredioDropdownItem(predio: p),
-                      ),
-                    ),
-                  ],
-                  onChanged: (v) => setState(() => _selectedPredioId = v),
+                  );
+                },
+                icon: const Icon(Icons.local_shipping_outlined),
+                label: const Text('Registrar Traslado'),
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(48),
                 ),
+              ),
               const SizedBox(height: 24),
               const Text(
                 'Foto de la Nariz (Opcional)',
@@ -775,74 +739,6 @@ class _EditCattleScreenState extends State<EditCattleScreen> {
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _PredioDropdownItem extends StatelessWidget {
-  final Predio predio;
-
-  const _PredioDropdownItem({required this.predio});
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final hasGps = predio.latitud != null && predio.longitud != null;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            predio.claveCatastral ?? 'Sin clave catastral',
-            style: TextStyle(
-              fontWeight: FontWeight.w600,
-              fontSize: 14,
-              color: cs.onSurface,
-            ),
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 2),
-          Row(
-            children: [
-              if (predio.superficieTotal != null) ...[
-                Icon(
-                  Icons.straighten_rounded,
-                  size: 12,
-                  color: cs.onSurfaceVariant,
-                ),
-                const SizedBox(width: 3),
-                Text(
-                  '${predio.superficieTotal!.toStringAsFixed(1)} ha',
-                  style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
-                ),
-                const SizedBox(width: 10),
-              ],
-              if (hasGps) ...[
-                Icon(
-                  Icons.location_on_rounded,
-                  size: 12,
-                  color: cs.onSurfaceVariant,
-                ),
-                const SizedBox(width: 3),
-                Flexible(
-                  child: Text(
-                    '${predio.latitud!.toStringAsFixed(4)}, '
-                    '${predio.longitud!.toStringAsFixed(4)}',
-                    style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ] else
-                Text(
-                  'Sin coordenadas GPS',
-                  style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
-                ),
-            ],
-          ),
-        ],
       ),
     );
   }

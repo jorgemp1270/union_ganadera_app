@@ -2,16 +2,23 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:union_ganadera_app/models/bovino.dart';
 import 'package:union_ganadera_app/models/evento.dart';
+import 'package:union_ganadera_app/models/predio.dart';
 import 'package:union_ganadera_app/models/user.dart';
 import 'package:union_ganadera_app/services/api_client.dart';
 import 'package:union_ganadera_app/services/auth_service.dart';
 import 'package:union_ganadera_app/services/evento_service.dart';
+import 'package:union_ganadera_app/services/predio_service.dart';
 import 'package:union_ganadera_app/utils/modern_app_bar.dart';
 
 class RegisterEventScreen extends StatefulWidget {
   final List<Bovino> bovinos;
+  final String? initialEventType;
 
-  const RegisterEventScreen({super.key, required this.bovinos});
+  const RegisterEventScreen({
+    super.key,
+    required this.bovinos,
+    this.initialEventType,
+  });
 
   @override
   State<RegisterEventScreen> createState() => _RegisterEventScreenState();
@@ -22,10 +29,16 @@ class _RegisterEventScreenState extends State<RegisterEventScreen> {
   final ApiClient _apiClient = ApiClient();
   late final EventoService _eventoService;
   late final AuthService _authService;
+  late final PredioService _predioService;
 
-  String _eventType = 'peso';
+  late String _eventType;
   bool _isLoading = false;
   User? _currentUser;
+
+  // Traslado fields
+  List<Predio> _predios = [];
+  String? _selectedTrasladoPredioId;
+  bool _isLoadingPredios = false;
 
   // Peso fields
   final _pesoController = TextEditingController();
@@ -73,9 +86,12 @@ class _RegisterEventScreenState extends State<RegisterEventScreen> {
   @override
   void initState() {
     super.initState();
+    _eventType = widget.initialEventType ?? 'peso';
     _eventoService = EventoService(_apiClient);
     _authService = AuthService(_apiClient);
+    _predioService = PredioService(_apiClient);
     _loadCurrentUser();
+    if (_eventType == 'traslado') _loadPredios();
   }
 
   Future<void> _loadCurrentUser() async {
@@ -91,6 +107,18 @@ class _RegisterEventScreenState extends State<RegisterEventScreen> {
   }
 
   bool get _isVeterinarian => _currentUser?.rol == 'veterinario';
+
+  Future<void> _loadPredios() async {
+    setState(() => _isLoadingPredios = true);
+    try {
+      final predios = await _predioService.getPredios();
+      if (mounted) setState(() => _predios = predios);
+    } catch (_) {
+      // Non-critical
+    } finally {
+      if (mounted) setState(() => _isLoadingPredios = false);
+    }
+  }
 
   Future<void> _loadEnfermedadesForBovino() async {
     if (widget.bovinos.length != 1) return;
@@ -232,6 +260,16 @@ class _RegisterEventScreenState extends State<RegisterEventScreen> {
               observaciones: obs,
             );
             break;
+          case 'traslado':
+            if (_selectedTrasladoPredioId == null) {
+              throw Exception('Debes seleccionar el predio de destino.');
+            }
+            await _eventoService.createTrasladoEvent(
+              bovinoId: bovino.id,
+              predioNuevoId: _selectedTrasladoPredioId!,
+              observaciones: obs,
+            );
+            break;
           case 'compraventa':
             if (_currentUser == null) {
               throw Exception(
@@ -359,6 +397,10 @@ class _RegisterEventScreenState extends State<RegisterEventScreen> {
                     value: 'dieta',
                     child: Text('Cambio de Dieta'),
                   ),
+                  const DropdownMenuItem(
+                    value: 'traslado',
+                    child: Text('Traslado de Predio'),
+                  ),
                   if (_isVeterinarian) ...[
                     const DropdownMenuItem(
                       value: 'vacunacion',
@@ -394,6 +436,7 @@ class _RegisterEventScreenState extends State<RegisterEventScreen> {
                   setState(() => _eventType = value!);
                   if (value == 'tratamiento') _loadEnfermedadesForBovino();
                   if (value == 'remision') _loadEnfermedadesForBovino();
+                  if (value == 'traslado') _loadPredios();
                 },
               ),
               const SizedBox(height: 20),
@@ -434,6 +477,124 @@ class _RegisterEventScreenState extends State<RegisterEventScreen> {
                               ? 'El tipo de alimento es requerido'
                               : null,
                 ),
+              ],
+
+              // ─── Traslado ────────────────────────────────────────────────
+              if (_eventType == 'traslado') ...[
+                if (widget.bovinos.length == 1 &&
+                    widget.bovinos.first.predioId != null) ...[
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 10,
+                    ),
+                    decoration: BoxDecoration(
+                      color: cs.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.location_on_rounded,
+                          size: 18,
+                          color: cs.onSurfaceVariant,
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Predio actual',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: cs.onSurfaceVariant,
+                                ),
+                              ),
+                              Text(
+                                _predios
+                                        .where(
+                                          (p) =>
+                                              p.id ==
+                                              widget.bovinos.first.predioId,
+                                        )
+                                        .firstOrNull
+                                        ?.claveCatastral ??
+                                    widget.bovinos.first.predioId!.substring(
+                                      0,
+                                      8,
+                                    ),
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                ],
+                _isLoadingPredios
+                    ? const Center(
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(vertical: 8),
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    )
+                    : DropdownButtonFormField<String?>(
+                      value: _selectedTrasladoPredioId,
+                      decoration: const InputDecoration(
+                        labelText: 'Predio de destino',
+                        prefixIcon: Icon(Icons.landscape_rounded),
+                        helperText:
+                            'Selecciona el predio al que se traslada el ganado',
+                      ),
+                      isExpanded: true,
+                      selectedItemBuilder:
+                          (context) => [
+                            const Text('Seleccionar predio...'),
+                            ..._predios
+                                .where(
+                                  (p) =>
+                                      widget.bovinos.length != 1 ||
+                                      p.id != widget.bovinos.first.predioId,
+                                )
+                                .map(
+                                  (p) => Text(
+                                    p.claveCatastral ?? 'Sin clave catastral',
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                          ],
+                      items: [
+                        const DropdownMenuItem(
+                          value: null,
+                          child: Text('Seleccionar predio...'),
+                        ),
+                        ..._predios
+                            .where(
+                              (p) =>
+                                  widget.bovinos.length != 1 ||
+                                  p.id != widget.bovinos.first.predioId,
+                            )
+                            .map(
+                              (p) => DropdownMenuItem(
+                                value: p.id,
+                                child: _PredioDropdownItem(predio: p),
+                              ),
+                            ),
+                      ],
+                      validator:
+                          (v) =>
+                              v == null
+                                  ? 'Selecciona el predio de destino'
+                                  : null,
+                      onChanged:
+                          (v) => setState(() => _selectedTrasladoPredioId = v),
+                    ),
               ],
 
               // ─── Vacunación ─────────────────────────────────────────────
@@ -878,6 +1039,75 @@ class _DatePickerField extends StatelessWidget {
                     : Theme.of(context).colorScheme.onSurfaceVariant,
           ),
         ),
+      ),
+    );
+  }
+}
+// ─── Predio dropdown item widget ──────────────────────────────────────────
+
+class _PredioDropdownItem extends StatelessWidget {
+  final Predio predio;
+
+  const _PredioDropdownItem({required this.predio});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final hasGps = predio.latitud != null && predio.longitud != null;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            predio.claveCatastral ?? 'Sin clave catastral',
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 14,
+              color: cs.onSurface,
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 2),
+          Row(
+            children: [
+              if (predio.superficieTotal != null) ...[
+                Icon(
+                  Icons.straighten_rounded,
+                  size: 12,
+                  color: cs.onSurfaceVariant,
+                ),
+                const SizedBox(width: 3),
+                Text(
+                  '${predio.superficieTotal!.toStringAsFixed(1)} ha',
+                  style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
+                ),
+                const SizedBox(width: 10),
+              ],
+              if (hasGps) ...[
+                Icon(
+                  Icons.location_on_rounded,
+                  size: 12,
+                  color: cs.onSurfaceVariant,
+                ),
+                const SizedBox(width: 3),
+                Flexible(
+                  child: Text(
+                    '${predio.latitud!.toStringAsFixed(4)}, '
+                    '${predio.longitud!.toStringAsFixed(4)}',
+                    style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ] else
+                Text(
+                  'Sin coordenadas GPS',
+                  style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
+                ),
+            ],
+          ),
+        ],
       ),
     );
   }
